@@ -64,9 +64,18 @@ export interface ConstantCard {
   kind: 'immediate' | 'address';
 }
 
+export interface PcTrackSlotOption {
+  label: string;
+  op: 'nop' | 'j' | 'blt' | 'bge' | 'beq' | 'bne';
+  a?: string;
+  b?: string;
+  target?: string;
+  asm: string;
+}
+
 export interface PcTrackInstruction {
   label?: string;
-  op: 'blt' | 'bge' | 'beq' | 'bne' | 'j' | 'mv' | 'add' | 'addi' | 'sub' | 'halt';
+  op: 'nop' | 'blt' | 'bge' | 'beq' | 'bne' | 'j' | 'mv' | 'add' | 'addi' | 'sub' | 'halt';
   a?: string;
   b?: string;
   dst?: string;
@@ -74,6 +83,8 @@ export interface PcTrackInstruction {
   imm?: number;
   target?: string;
   asm: string;
+  /** 若提供，则该行为玩家可点击修补的「修 Bug 槽位」。 */
+  slotOptions?: PcTrackSlotOption[];
 }
 
 export interface PcTrackCase {
@@ -90,6 +101,8 @@ export interface PcTrackCase {
 
 export interface ManualCpuSandboxConfig {
   type: 'manual-cpu';
+  /** 是否在首次未通关时先柔化聚焦左侧手动热身（仅建议用于 1-1 / 1-2 破冰关）。 */
+  focusWarmupFirst?: boolean;
   modules: ManualCpuModule[];
   recordToAsm?: boolean;
   focusRegs: string[];
@@ -99,6 +112,12 @@ export interface ManualCpuSandboxConfig {
   allowCopy?: boolean;
   watchMemory?: string[];
   pcTrack?: {
+    /** 示范修 Bug 小例程的简短说明（避免与本关主任务混淆）。 */
+    demoSummary?: string;
+    /** 运行结束但未达成目标时的排障提示（引导发现 Bug）。 */
+    failHint?: string;
+    /** 修好并达成目标时的顿悟提示。 */
+    successHint?: string;
     cases?: PcTrackCase[];
     program: PcTrackInstruction[];
   };
@@ -124,6 +143,20 @@ export interface PlaceholderSandboxConfig {
 
 export type SandboxConfig = ManualCpuSandboxConfig | PlaceholderSandboxConfig;
 
+/** 单关独立的界面与 CPU 舞台可见性配置（零跨关继承，缺省项均为 false）。 */
+export interface LevelUiConfig {
+  immediatePort?: boolean;
+  jumpRail?: boolean;
+  memoryStage?: boolean;
+  pipelineStages?: boolean;
+  debugControls?: boolean;
+  regXName?: boolean;
+  allRegsToggle?: boolean;
+  hexToggle?: boolean;
+  untrackedRegs?: boolean;
+  ecallSuffix?: boolean;
+}
+
 export interface LevelMeta {
   id: string;
   chapter: number;
@@ -136,6 +169,7 @@ export interface LevelMeta {
   prerequisites: string[];
   parInstructions?: number;
   concepts: string[];
+  ui?: LevelUiConfig;
   goalSummary: GoalSummary;
   briefing?: BriefingSlide[];
   sandbox: SandboxConfig;
@@ -200,9 +234,31 @@ export interface MachineSnapshot {
   generatedAssembly?: string;
 }
 
+export interface ExecutedOpDto {
+  kind: 'alu' | 'copy' | 'branch' | 'jump' | 'load' | 'store' | 'halt' | 'other' | string;
+  op: string;
+  asmText?: string;
+  pc?: number;
+  symbol?: string;
+  line: number;
+  nextLine: number;
+  rs1?: string;
+  rs1Val?: number;
+  rs2?: string;
+  rs2Val?: number;
+  imm?: number;
+  rd?: string;
+  rdOldVal?: number;
+  rdNewVal?: number;
+  memAddr?: number;
+  memVal?: number;
+  branchTaken?: boolean;
+}
+
 export interface StepPayload extends MachineSnapshot {
   regChanges: Record<string, number>;
-  memChanges: Record<string, number>;
+  memChanges: Record<number, number>;
+  executed?: ExecutedOpDto;
 }
 
 export interface DiffDto {

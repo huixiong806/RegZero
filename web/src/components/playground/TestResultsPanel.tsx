@@ -1,4 +1,4 @@
-import { AlertTriangle, Award, Bug, Check, X } from 'lucide-react';
+import { AlertTriangle, Award, Check, Play, X } from 'lucide-react';
 import { FULL_UI_DISCLOSURE, type UiDisclosure } from '../../domain/knowledge';
 import { formatDiffSubject } from '../../domain/registers';
 import type { SubmitDto } from '../../engine/types';
@@ -6,12 +6,14 @@ import type { SubmitDto } from '../../engine/types';
 interface TestResultsPanelProps {
   result: SubmitDto | null;
   disclosure?: UiDisclosure;
+  canReplayCase?: boolean;
   onDebugCase: (caseIndex: number) => void;
 }
 
 export function TestResultsPanel({
   result,
   disclosure = FULL_UI_DISCLOSURE,
+  canReplayCase = false,
   onDebugCase,
 }: TestResultsPanelProps) {
   if (!result) return null;
@@ -22,27 +24,30 @@ export function TestResultsPanel({
   const showInstrCount =
     result.instructionCount !== undefined &&
     (disclosure.showDebugControls || result.parInstructions !== undefined);
+  const allowClickCase = canReplayCase || disclosure.showDebugControls;
 
   return (
     <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/80 p-3">
-      {/* 紧凑测例胶囊点阵 */}
+      {/* 紧凑测例胶囊点阵（点击任意测例均可在左侧芯片台重放执行动画） */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           {result.tests.map((t, idx) => (
             <button
               key={`${idx}-${t.name}`}
               type="button"
-              title={t.name}
-              disabled={t.passed || !disclosure.showDebugControls}
+              title={allowClickCase ? `${t.name}（点击重放动画）` : t.name}
+              disabled={!allowClickCase}
               onClick={() => {
-                if (!t.passed && disclosure.showDebugControls) {
+                if (allowClickCase) {
                   onDebugCase(t.failure?.caseIndex ?? idx);
                 }
               }}
               className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-xs font-bold transition ${
                 t.passed
-                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-                  : disclosure.showDebugControls
+                  ? allowClickCase
+                    ? 'cursor-pointer border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                    : 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                  : allowClickCase
                     ? 'cursor-pointer border-rose-500/60 bg-rose-500/20 text-rose-200 hover:bg-rose-500/30'
                     : 'border-rose-500/50 bg-rose-500/15 text-rose-200'
               }`}
@@ -116,13 +121,13 @@ export function TestResultsPanel({
                 )}
               </div>
 
-              {disclosure.showDebugControls && (
+              {allowClickCase && (
                 <button
                   type="button"
                   onClick={() => onDebugCase(t.failure?.caseIndex ?? index)}
-                  className="inline-flex items-center gap-1 rounded-md border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-200 hover:bg-amber-500/25"
+                  className="inline-flex items-center gap-1 rounded-md border border-cyan-400/50 bg-cyan-500/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-200 hover:bg-cyan-500/25"
                 >
-                  <Bug className="h-3 w-3" /> 单步排查
+                  <Play className="h-3 w-3" /> 看动画
                 </button>
               )}
             </div>

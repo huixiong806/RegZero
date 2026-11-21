@@ -65,17 +65,17 @@
     },
     {
       "id": "pattern-if-else",
-      "heading": "模式 1：二选一分支（if / else）",
+      "heading": "常见写法 1：二选一分支",
       "unlockAny": ["blt", "bge"],
       "kind": "markdown",
-      "markdown": "```asm\n    blt t0, t1, else_branch\n    # 条件不成立时走这里\n    j   done          # 别忘了跳过 else 块！\nelse_branch:\n    # 条件成立时走这里\ndone:\n```"
+      "markdown": "```asm\n    blt t0, t1, branch_b\n    # 条件不成立时走这里（路线 A）\n    j   done          # 别忘了跳过路线 B！\nbranch_b:\n    # 条件成立时走这里（路线 B）\ndone:\n```"
     },
     {
       "id": "pattern-while",
-      "heading": "模式 2：前置判断循环（while）",
+      "heading": "常见写法 2：先判断再重复（循环）",
       "unlockAny": ["loop", "backward-jump"],
       "kind": "markdown",
-      "markdown": "```asm\nloop:\n    blt t0, t2, done  # 不满足继续条件时先跳出（0 次也能安全跳过）\n    # 循环体\n    j   loop          # 往回跳 = 循环！\ndone:\n```"
+      "markdown": "```asm\nloop:\n    blt t0, t2, done  # 不满足继续条件时先跳出（0 次也能安全跳过）\n    # 重复执行的代码\n    j   loop          # 往回跳 = 循环！\ndone:\n```"
     }
   ]
 }

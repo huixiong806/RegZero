@@ -7,7 +7,9 @@ import {
   createManualCpuState,
   undoManualCpu,
 } from './model';
-import { applyPcTrackStep } from './pcTrackModel';
+import { buildStageSequence, getPcUpdateDelayMs, totalSequenceMs } from './datapathTimeline';
+import { applyPcTrackStep, stepPcTrackWithPulse } from './pcTrackModel';
+import { executedOpToPulse, mapSimRegsToAbi } from './pulseModel';
 
 describe('sandboxes/manual-cpu/model', () => {
   it('records add instruction and detects goal completion', () => {
@@ -122,5 +124,128 @@ describe('sandboxes/manual-cpu/model', () => {
     s = applyPcTrackStep(s, cfg);
     expect(s.halted).toBe(true);
     expect(s.completed).toBe(true);
+  });
+
+  it('maps simulator xN regs to ABI names and converts ExecutedOpDto into visual pulse events', () => {
+    const abiRegs = mapSimRegsToAbi({ x5: 3, x6: 5, x7: 0xffffffff });
+    expect(abiRegs.t0).toBe(3);
+    expect(abiRegs.t1).toBe(5);
+    expect(abiRegs.t2).toBe(-1);
+
+    const pulse = executedOpToPulse(
+      {
+        kind: 'alu',
+        op: 'addi',
+        symbol: '+',
+        line: 2,
+        nextLine: 3,
+        rs1: 't0',
+        rs1Val: 5,
+        imm: 7,
+        rd: 't1',
+        rdOldVal: 0,
+        rdNewVal: 12,
+      },
+      1,
+    );
+    expect(pulse.leftSource).toEqual({ kind: 'reg', name: 't0', value: 5 });
+    expect(pulse.rightSource).toEqual({ kind: 'const', label: '7', value: 7 });
+    expect(pulse.destReg).toBe('t1');
+    expect(pulse.oldDestVal).toBe(0);
+    expect(pulse.newDestVal).toBe(12);
+
+    const frames = buildStageSequence(pulse, true);
+    expect(frames.map((f) => f.stage)).toEqual([
+      'fetch',
+      'decode',
+      'execute',
+      'writeback',
+    ]);
+    expect(totalSequenceMs(frames, 4)).toBeLessThan(totalSequenceMs(frames, 1));
+    expect(totalSequenceMs(frames, 16)).toBeLessThan(totalSequenceMs(frames, 4));
+
+    // 条件跳转成立时应包含 writeback 阶段写回 PC，且 PC 翻转时机早于整条指令结束
+    const takenBranch = executedOpToPulse(
+      {
+        kind: 'branch',
+        op: 'blt',
+        symbol: '<',
+        line: 2,
+        nextLine: 6,
+        rs1: 't0',
+        rs1Val: 4,
+        rs2: 't1',
+        rs2Val: 9,
+        branchTaken: true,
+      },
+      2,
+    );
+    const branchFrames = buildStageSequence(takenBranch, true);
+    expect(branchFrames.map((f) => f.stage)).toEqual(['fetch', 'decode', 'execute', 'writeback']);
+    expect(getPcUpdateDelayMs(takenBranch, true, 1)).toBeLessThan(totalSequenceMs(branchFrames, 1));
+  });
+
+  it('runs bug-fix pcTrack slot puzzle: falls through when nop, passes when fixed to j done, and emits pulses', () => {
+    const cfg: ManualCpuSandboxConfig = {
+      type: 'manual-cpu',
+      modules: ['regs', 'pcTrack'],
+      focusRegs: ['t0', 't1', 't2'],
+      pcTrack: {
+        failHint: '被穿透覆盖了',
+        successHint: '修好了',
+        program: [
+          { op: 'blt', a: 't0', b: 't1', target: 'add_one', asm: 'blt t0, t1, add_one' },
+          { op: 'addi', dst: 't2', src: 't0', imm: -2, asm: 'addi t2, t0, -2' },
+          {
+            op: 'nop',
+            asm: '(空位)',
+            slotOptions: [
+              { label: '空位', op: 'nop', asm: '(空位)' },
+              { label: 'j done', op: 'j', target: 'done', asm: 'j done' },
+            ],
+          },
+          { label: 'add_one', op: 'addi', dst: 't2', src: 't0', imm: 1, asm: 'addi t2, t0, 1' },
+          { label: 'done', op: 'halt', asm: '(结束)' },
+        ],
+      },
+      warmupPuzzle: {
+        prompt: 'fix bug',
+        initial: { regs: { t0: 12, t1: 10, t2: 0 } },
+        goal: { regs: { t2: 10 } },
+      },
+    };
+
+    // 未修补（槽位 2 = 0 即 nop）：t2 先算成 10 再被 add_one 覆盖成 13 → 失败提示
+    let s = createManualCpuState(cfg);
+    let step = stepPcTrackWithPulse(s, cfg, { 2: 0 }, 1);
+    expect(step.pulse?.kind).toBe('branch');
+    expect(step.pulse?.branchTaken).toBe(false);
+    s = step.state;
+    step = stepPcTrackWithPulse(s, cfg, { 2: 0 }, 2);
+    expect(step.pulse?.kind).toBe('alu');
+    expect(step.state.regs.t2).toBe(10);
+    s = step.state;
+    step = stepPcTrackWithPulse(s, cfg, { 2: 0 }, 3); // nop fall-through
+    expect(step.pulse).toBeNull();
+    s = step.state;
+    step = stepPcTrackWithPulse(s, cfg, { 2: 0 }, 4); // add_one overwrites 10 -> 13!
+    expect(step.state.regs.t2).toBe(13);
+    s = step.state;
+    step = stepPcTrackWithPulse(s, cfg, { 2: 0 }, 5); // halt
+    expect(step.state.halted).toBe(true);
+    expect(step.state.completed).toBe(false);
+    expect(step.state.feedback?.message).toBe('被穿透覆盖了');
+
+    // 修补为 j done（槽位 2 = 1）：跳过 add_one，成功保住 t2 = 10
+    s = createManualCpuState(cfg);
+    s = stepPcTrackWithPulse(s, cfg, { 2: 1 }, 1).state;
+    s = stepPcTrackWithPulse(s, cfg, { 2: 1 }, 2).state;
+    step = stepPcTrackWithPulse(s, cfg, { 2: 1 }, 3);
+    expect(step.pulse?.kind).toBe('jump');
+    expect(step.state.pcIndex).toBe(4); // skipped add_one directly to done
+    s = stepPcTrackWithPulse(step.state, cfg, { 2: 1 }, 4).state;
+    expect(s.halted).toBe(true);
+    expect(s.completed).toBe(true);
+    expect(s.regs.t2).toBe(10);
   });
 });

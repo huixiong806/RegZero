@@ -3,28 +3,27 @@
   "chapter": 1,
   "order": 2,
   "kind": "lesson",
-  "title": "引入常量：addi 与 zero",
+  "title": "引入常量：addi",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
   "prerequisites": ["1-1"],
-  "concepts": ["immediate", "addi", "zero"],
+  "concepts": ["immediate", "addi"],
+  "ui": {
+    "immediatePort": true
+  },
   "goalSummary": {
-    "before": "t0 中有一个未知整数（没有任何寄存器里存着 7）",
+    "before": "t0 中存着一个整数（没有任何寄存器里存着 7）",
     "after": "计算 t0 + 7，将结果存入 t1"
   },
   "briefing": [
     {
       "tag": "遇到问题",
-      "text": "这一关要把 `t0` 加上 `7`，但你会发现——**没有任何寄存器里存着 7**。"
+      "text": "这一关要把 `t0` 加上 `7`，但**没有任何寄存器里存着 7**。"
     },
     {
       "tag": "新工具",
       "text": "直接写进指令里的数字叫做**常量**（也叫立即数），用 `addi` 就能把「寄存器 + 常量」的结果存进目标寄存器。"
-    },
-    {
-      "tag": "特殊格子",
-      "text": "本关还多了一个 `zero` 寄存器：它**永远等于 0**，任何写入都不会改变它。"
     },
     {
       "tag": "通关目标",
@@ -33,13 +32,13 @@
   ],
   "sandbox": {
     "type": "manual-cpu",
+    "focusWarmupFirst": true,
     "modules": ["regs", "constants", "alu"],
     "recordToAsm": true,
-    "focusRegs": ["t0", "t1", "zero"],
+    "focusRegs": ["t0", "t1"],
     "regRoles": {
       "t0": "输入",
-      "t1": "结果",
-      "zero": "恒为 0"
+      "t1": "结果"
     },
     "constantCards": [
       { "label": "7", "value": 7, "kind": "immediate" }
@@ -47,9 +46,9 @@
     "aluOps": ["+"],
     "allowCopy": false,
     "warmupPuzzle": {
-      "prompt": "把 t0(5) 放入左输入槽，把常量卡 7 放入右输入槽，目标选 t1，点击「执行一步」。",
+      "prompt": "把 t0(5) 放入左输入槽，把常量卡 7 放入右输入槽，目标选 t1，点击「执行」。",
       "initial": {
-        "regs": { "t0": 5, "t1": 0, "zero": 0 }
+        "regs": { "t0": 5, "t1": 0 }
       },
       "goal": {
         "regs": { "t1": 12 }

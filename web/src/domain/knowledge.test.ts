@@ -4,6 +4,7 @@ import {
   buildKnowledgeState,
   filterWikiEntries,
   getLevelNewConcepts,
+  resolveLevelUiDisclosure,
 } from './knowledge';
 
 function makeLevel(
@@ -92,7 +93,9 @@ describe('domain/knowledge', () => {
     expect(knowledge.ui.showUntrackedNonZeroRegs).toBe(false);
     expect(knowledge.ui.showEcallSuffix).toBe(false);
     expect(knowledge.ui.showDebugControls).toBe(false);
+    expect(knowledge.ui.showImmediatePort).toBe(false);
     expect(knowledge.ui.showMemoryPanel).toBe(false);
+    expect(knowledge.ui.showPipelineStages).toBe(false);
 
     const visible = filterWikiEntries(SAMPLE_WIKI, knowledge);
     // 1-6 的分支词条应完全隐藏
@@ -136,6 +139,7 @@ describe('domain/knowledge', () => {
     expect(knowledge.ui.showAllRegsToggle).toBe(true);
     expect(knowledge.ui.showHexToggle).toBe(true);
     expect(knowledge.ui.showUntrackedNonZeroRegs).toBe(true);
+    expect(knowledge.ui.showPipelineStages).toBe(true);
 
     const visible = filterWikiEntries(SAMPLE_WIKI, knowledge);
     expect(visible.map((e) => e.topic)).toEqual(['rv32-registers', 'rv32-branch']);
@@ -144,5 +148,26 @@ describe('domain/knowledge', () => {
       expect(table.columns.map((c) => c.id)).toEqual(['abi', 'xName', 'role']);
       expect(table.rows.map((r) => r.id)).toEqual(['t0-t2', 'zero', 'sp']);
     }
+  });
+
+  it('resolves per-level meta.ui independently with all omitted flags defaulting to false', () => {
+    const minimal = resolveLevelUiDisclosure(undefined);
+    expect(minimal.showImmediatePort).toBe(false);
+    expect(minimal.showJumpRail).toBe(false);
+    expect(minimal.showMemoryPanel).toBe(false);
+    expect(minimal.showPipelineStages).toBe(false);
+    expect(minimal.showDebugControls).toBe(false);
+    expect(minimal.showEcallSuffix).toBe(false);
+
+    const custom = resolveLevelUiDisclosure({
+      immediatePort: true,
+      jumpRail: true,
+      pipelineStages: true,
+    });
+    expect(custom.showImmediatePort).toBe(true);
+    expect(custom.showJumpRail).toBe(true);
+    expect(custom.showPipelineStages).toBe(true);
+    expect(custom.showMemoryPanel).toBe(false);
+    expect(custom.showDebugControls).toBe(false);
   });
 });

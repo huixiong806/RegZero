@@ -3,12 +3,17 @@
   "chapter": 1,
   "order": 6,
   "kind": "lesson",
-  "title": "打破直线：PC 指针、标签与分支（blt / j）",
+  "title": "打破直线：PC、标签与条件跳转（blt / j）",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
   "prerequisites": ["1-5"],
   "concepts": ["pc", "label", "blt", "bge", "j"],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "debugControls": true
+  },
   "goalSummary": {
     "before": "t0 与 t1 中存有两个整数",
     "after": "将 t0 与 t1 中的较大值存入 t2"
@@ -19,52 +24,32 @@
       "text": "CPU 靠 **PC（程序计数器）** 决定下一条执行哪一行指令，默认总是从上往下顺序执行。"
     },
     {
-      "tag": "学会拐弯",
-      "text": "给代码贴上**标签**（如 `use_t1:`），再配合条件跳转 `blt` / `bge` 与无条件跳转 `j`，就能像 `if / else` 一样拐弯！"
+      "tag": "先找 Bug",
+      "text": "右边编辑器里已经写好了一段**带 Bug 的代码**（贴好了 `use_t1:` 和 `done:` 两个标签）。先别改，直接点「运行并提交」，盯着左边 CPU 动画看看哪里出了问题！"
     },
     {
-      "tag": "通关目标",
-      "text": "比较 `t0` 与 `t1`，把其中**较大**的数存入 `t2`。"
+      "tag": "修好它",
+      "text": "看懂问题后，在空行补上无条件跳转 `j 标签`，让所有测例全部通过。"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "pcTrack"],
-    "recordToAsm": true,
+    "modules": ["regs", "alu"],
+    "recordToAsm": false,
     "focusRegs": ["t0", "t1", "t2"],
     "regRoles": {
       "t0": "输入 A",
       "t1": "输入 B",
       "t2": "较大值"
     },
-    "pcTrack": {
-      "cases": [
-        {
-          "label": "场景 1：t0=4, t1=9（触发跳转）",
-          "initial": { "regs": { "t0": 4, "t1": 9, "t2": 0 } },
-          "goal": { "regs": { "t2": 9 } }
-        },
-        {
-          "label": "场景 2：t0=12, t1=5（走主干再 j 跳过）",
-          "initial": { "regs": { "t0": 12, "t1": 5, "t2": 0 } },
-          "goal": { "regs": { "t2": 12 } }
-        }
-      ],
-      "program": [
-        { "op": "blt", "a": "t0", "b": "t1", "target": "use_t1", "asm": "blt t0, t1, use_t1" },
-        { "op": "mv", "dst": "t2", "src": "t0", "asm": "mv t2, t0" },
-        { "op": "j", "target": "done", "asm": "j done" },
-        { "label": "use_t1", "op": "mv", "dst": "t2", "src": "t1", "asm": "mv t2, t1" },
-        { "label": "done", "op": "halt", "asm": "ecall" }
-      ]
-    },
+    "aluOps": ["+"],
     "warmupPuzzle": {
-      "prompt": "亲手扮演 PC 指针走完分支轨道：遇到 blt 判断大小决定是否跳转，并体会 j done 如何跳过另一条分支。",
+      "prompt": "直接点右侧「运行并提交」，观察 t0=12, t1=5 时为什么结果会被覆盖，再补上缺失的跳转指令。",
       "initial": {
-        "regs": { "t0": 4, "t1": 9, "t2": 0 }
+        "regs": { "t0": 12, "t1": 5, "t2": 0 }
       },
       "goal": {
-        "regs": { "t2": 9 }
+        "regs": { "t2": 12 }
       }
     }
   },

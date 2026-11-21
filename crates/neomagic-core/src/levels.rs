@@ -111,6 +111,32 @@ pub struct EditorConfig {
 }
 
 /// 单关 `meta.json` 完整元信息。
+/// 单关独立的界面与 CPU 舞台可见性配置（零跨关继承，方便调关与玩家自定义关卡）。
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LevelUiConfig {
+    /// CPU 舞台：展示右侧「立即数」端口与 Y 型汇流总线
+    pub immediate_port: bool,
+    /// CPU 舞台：展示右侧「跳转 / 循环 PC 回流轨」
+    pub jump_rail: bool,
+    /// CPU 舞台 & 工作台：展示「访存」阶段模块与内存监视器
+    pub memory_stage: bool,
+    /// CPU 舞台：展示顶部 5 阶段微架构状态灯带与术语标签（取指/译码/执行/访存/写回）
+    pub pipeline_stages: bool,
+    /// 工作台：展示「测例选择 / 试运行 / 单步调试」控制条
+    pub debug_controls: bool,
+    /// 寄存器卡片：展示底层硬件编号（x0–x31）
+    pub reg_x_name: bool,
+    /// 寄存器盒：展示「32 格」全部寄存器展开切换
+    pub all_regs_toggle: bool,
+    /// 寄存器面板：展示「DEC / HEX」进制切换
+    pub hex_toggle: bool,
+    /// 寄存器面板：展示未聚焦但非零的系统寄存器（如 sp=0xF000）
+    pub untracked_regs: bool,
+    /// 编辑器：显示末尾只读的 `ecall` 行（默认 false 自动隐藏并在提交时无损拼回）
+    pub ecall_suffix: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LevelMeta {
@@ -136,6 +162,9 @@ pub struct LevelMeta {
     pub par_instructions: Option<usize>,
     #[serde(default)]
     pub concepts: Vec<String>,
+    /// 本关独立的界面与 CPU 舞台展示开关（零跨关继承，缺省项均为 false）
+    #[serde(default)]
+    pub ui: LevelUiConfig,
     #[serde(default)]
     pub goal_summary: GoalSummary,
     /// 首次进入该关弹出的多页口语化微引导卡片

@@ -8,14 +8,14 @@
     "type": "static",
     "tests": [
       {
-        "name": "4 与 9：较大值为 9",
-        "initial": { "regs": { "t0": 4, "t1": 9 } },
-        "expected": { "regs": { "t2": 9 } }
-      },
-      {
         "name": "12 与 5：较大值为 12",
         "initial": { "regs": { "t0": 12, "t1": 5 } },
         "expected": { "regs": { "t2": 12 } }
+      },
+      {
+        "name": "4 与 9：较大值为 9",
+        "initial": { "regs": { "t0": 4, "t1": 9 } },
+        "expected": { "regs": { "t2": 9 } }
       },
       {
         "name": "7 与 7：两数相等",

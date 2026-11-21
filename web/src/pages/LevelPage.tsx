@@ -8,10 +8,15 @@ import { LevelBriefingModal } from '../components/level/LevelBriefingModal';
 import { WikiDrawer } from '../components/level/WikiDrawer';
 import type { CodeEditorHandle } from '../components/playground/CodeEditor';
 import { PlaygroundWorkspace } from '../components/playground/PlaygroundWorkspace';
-import { buildKnowledgeState, getLevelNewConcepts } from '../domain/knowledge';
+import {
+  buildKnowledgeState,
+  getLevelNewConcepts,
+  resolveLevelUiDisclosure,
+} from '../domain/knowledge';
 import { defaultEngineClient } from '../engine/OnlineWasmClient';
 import { hasSeenBriefing, markBriefingSeen } from '../engine/progressStorage';
 import type { LevelPayload, SubmitDto } from '../engine/types';
+import type { LiveCpuPlayback } from '../sandboxes/manual-cpu/pulseModel';
 import { renderSandbox } from '../sandboxes/registry';
 
 export function LevelPage() {
@@ -27,11 +32,12 @@ export function LevelPage() {
   const [drawerMode, setDrawerMode] = useState<'lesson' | 'hints' | null>(null);
   const [wikiTopic, setWikiTopic] = useState<string | null>(null);
   const [justPassed, setJustPassed] = useState(false);
-  // 3A 柔化两段式聚焦：未通关时先突出左侧沙盘，完成或点击右侧即切到编码焦点
-  const [focusStage, setFocusStage] = useState<'sandbox' | 'code'>('sandbox');
+  const [focusStage, setFocusStage] = useState<'sandbox' | 'code'>('code');
   const [editorGuide, setEditorGuide] = useState<string | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
   const [pulseLessonBtn, setPulseLessonBtn] = useState(false);
+  const [livePlayback, setLivePlayback] = useState<LiveCpuPlayback | null>(null);
+  const [exitPlaybackNonce, setExitPlaybackNonce] = useState(0);
 
   const alreadyPassed = Boolean(progress.levels[id]?.passed);
 
@@ -50,13 +56,17 @@ export function LevelPage() {
     setEditorGuide(null);
     setShowBriefing(false);
     setPulseLessonBtn(false);
-    setFocusStage(alreadyPassed ? 'code' : 'sandbox');
+    setLivePlayback(null);
     defaultEngineClient
       .loadLevel(id)
       .then((payload) => {
         if (!active) return;
         setLevel(payload);
         setError(null);
+        const wantsWarmup =
+          payload.meta.sandbox.type === 'manual-cpu' &&
+          Boolean(payload.meta.sandbox.focusWarmupFirst);
+        setFocusStage(!alreadyPassed && wantsWarmup ? 'sandbox' : 'code');
         const slides = payload.meta.briefing ?? [];
         if (slides.length > 0 && !alreadyPassed && !hasSeenBriefing(payload.id)) {
           setShowBriefing(true);
@@ -81,6 +91,11 @@ export function LevelPage() {
   const levelNewConcepts = useMemo(
     () => getLevelNewConcepts(levels, id),
     [levels, id],
+  );
+  // 单关 UI 与 CPU 舞台部件严格由本关 `meta.ui` 独立决定（零跨关继承，便于玩家自定义关卡）
+  const levelUi = useMemo(
+    () => resolveLevelUiDisclosure(level?.meta.ui),
+    [level?.meta.ui],
   );
 
   const handleFocusEditor = () => {
@@ -119,7 +134,11 @@ export function LevelPage() {
   const nextMain = nextUnlocked.find((l) => l.kind !== 'challenge');
   const nextSide = nextUnlocked.find((l) => l.kind === 'challenge');
 
-  const sandboxFocused = focusStage === 'sandbox';
+  const isManualCpu = level.meta.sandbox.type === 'manual-cpu';
+  const wantsWarmup = isManualCpu && Boolean(level.meta.sandbox.focusWarmupFirst);
+  const isPlayingCode = Boolean(livePlayback?.active);
+  const dimRight = wantsWarmup && !isPlayingCode && focusStage === 'sandbox';
+  const dimLeft = wantsWarmup && !isPlayingCode && focusStage === 'code';
 
   return (
     <div className="space-y-3">
@@ -136,7 +155,7 @@ export function LevelPage() {
         onOpenWiki={(topic) => setWikiTopic(topic)}
       />
 
-      {/* 常驻高亮的本关目标条：位于两栏之上，无论处于试算还是编码阶段始终清晰可见 */}
+      {/* 常驻高亮的本关目标条：位于两栏之上，无论处于试算、编码还是动画播放阶段始终清晰可见 */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-cyan-500/35 bg-cyan-950/20 px-4 py-2.5 text-xs shadow-[0_0_20px_rgba(34,211,238,0.06)]">
         <span className="inline-flex items-center gap-1.5 font-bold text-cyan-300">
           <Target className="h-4 w-4" /> 本关目标
@@ -146,40 +165,56 @@ export function LevelPage() {
         <span className="font-semibold text-white">{level.meta.goalSummary.after}</span>
       </div>
 
-      {/* 两段式柔化聚焦双栏：先左动手试算 → 再右写下指令（老玩家随时点击右侧即可直接编码） */}
+      {/* 统一双栏：左 CPU 电路舞台（可手动试算 + 自动演示代码脉冲） / 右代码编辑与验证 */}
       <div className="grid gap-3.5 lg:grid-cols-12">
         <div
-          onMouseDown={() => setFocusStage('sandbox')}
+          onMouseDown={() => {
+            if (!isPlayingCode) setFocusStage('sandbox');
+          }}
           className={`space-y-1.5 transition-opacity duration-200 lg:col-span-5 ${
-            sandboxFocused ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            dimLeft ? 'opacity-85 hover:opacity-100' : 'opacity-100'
           }`}
         >
           <div className="flex items-center justify-between px-1">
             <span
               className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${
-                sandboxFocused ? 'text-cyan-300' : 'text-slate-500'
+                isPlayingCode || !dimLeft ? 'text-cyan-300' : 'text-slate-500'
               }`}
             >
-              <span
-                className={`flex h-4 w-4 items-center justify-center rounded-full font-mono text-[10px] font-bold ${
-                  sandboxFocused
-                    ? 'bg-cyan-400 text-slate-950'
-                    : 'bg-slate-800 text-slate-400'
-                }`}
-              >
-                1
-              </span>
-              先动手试算
+              {wantsWarmup ? (
+                <>
+                  <span
+                    className={`flex h-4 w-4 items-center justify-center rounded-full font-mono text-[10px] font-bold ${
+                      isPlayingCode || !dimLeft
+                        ? 'bg-cyan-400 text-slate-950'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    1
+                  </span>
+                  {isPlayingCode ? '代码执行舞台' : '先动手试算'}
+                </>
+              ) : isPlayingCode ? (
+                'CPU 执行舞台'
+              ) : (
+                'CPU 舞台（可选手动试算）'
+              )}
             </span>
           </div>
           <div
             className={`rounded-2xl transition ${
-              sandboxFocused ? 'ring-1 ring-cyan-500/35' : ''
+              isPlayingCode
+                ? 'ring-1 ring-cyan-400/60 shadow-[0_0_24px_rgba(34,211,238,0.12)]'
+                : !dimLeft && wantsWarmup
+                  ? 'ring-1 ring-cyan-500/35'
+                  : ''
             }`}
           >
             {renderSandbox({
               config: level.meta.sandbox,
-              disclosure: levelKnowledge.ui,
+              disclosure: levelUi,
+              playback: livePlayback,
+              onExitPlayback: () => setExitPlaybackNonce((n) => n + 1),
               onFocusEditor: handleFocusEditor,
             })}
           </div>
@@ -189,37 +224,46 @@ export function LevelPage() {
           onMouseDown={() => setFocusStage('code')}
           onFocusCapture={() => setFocusStage('code')}
           className={`space-y-1.5 transition-opacity duration-200 lg:col-span-7 ${
-            sandboxFocused ? 'opacity-55 hover:opacity-95' : 'opacity-100'
+            dimRight ? 'opacity-55 hover:opacity-95' : 'opacity-100'
           }`}
         >
           <div className="flex items-center justify-between px-1">
             <span
               className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${
-                !sandboxFocused ? 'text-emerald-300' : 'text-slate-500'
+                !dimRight ? 'text-emerald-300' : 'text-slate-500'
               }`}
             >
-              <span
-                className={`flex h-4 w-4 items-center justify-center rounded-full font-mono text-[10px] font-bold ${
-                  !sandboxFocused
-                    ? 'bg-emerald-400 text-slate-950'
-                    : 'bg-slate-800 text-slate-400'
-                }`}
-              >
-                2
-              </span>
-              写下指令并提交
+              {wantsWarmup ? (
+                <>
+                  <span
+                    className={`flex h-4 w-4 items-center justify-center rounded-full font-mono text-[10px] font-bold ${
+                      !dimRight
+                        ? 'bg-emerald-400 text-slate-950'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    2
+                  </span>
+                  写下指令并提交
+                </>
+              ) : (
+                '编写指令并运行'
+              )}
             </span>
           </div>
           <div
             className={`rounded-2xl transition ${
-              !sandboxFocused ? 'ring-1 ring-emerald-500/35' : ''
+              !dimRight && wantsWarmup ? 'ring-1 ring-emerald-500/35' : ''
             }`}
           >
             <PlaygroundWorkspace
               level={level}
               editorRef={editorRef}
-              disclosure={levelKnowledge.ui}
+              disclosure={levelUi}
               guideHint={editorGuide}
+              hideRegisterPanel={isManualCpu}
+              exitPlaybackNonce={exitPlaybackNonce}
+              onPlaybackChange={isManualCpu ? setLivePlayback : undefined}
               onUserEdit={() => setEditorGuide(null)}
               onSubmitted={handleSubmitted}
             />

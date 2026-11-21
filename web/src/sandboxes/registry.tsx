@@ -2,10 +2,13 @@ import type { ReactNode } from 'react';
 import type { UiDisclosure } from '../domain/knowledge';
 import type { SandboxConfig } from '../engine/types';
 import { ManualCpuSandbox } from './manual-cpu/ManualCpuSandbox';
+import type { LiveCpuPlayback } from './manual-cpu/pulseModel';
 
 export interface SandboxRenderProps {
   config: SandboxConfig;
   disclosure?: UiDisclosure;
+  playback?: LiveCpuPlayback | null;
+  onExitPlayback?: () => void;
   onFocusEditor?: () => void;
 }
 
@@ -18,6 +21,8 @@ export interface SandboxRenderProps {
 export function renderSandbox({
   config,
   disclosure,
+  playback,
+  onExitPlayback,
   onFocusEditor,
 }: SandboxRenderProps): ReactNode {
   switch (config.type) {
@@ -26,6 +31,13 @@ export function renderSandbox({
         <ManualCpuSandbox
           config={config}
           showRegXName={disclosure?.showRegXName ?? false}
+          allowExpandAllRegs={disclosure?.showAllRegsToggle ?? false}
+          immediateUnlocked={disclosure?.showImmediatePort ?? false}
+          showJumpRail={disclosure?.showJumpRail ?? false}
+          memoryUnlocked={disclosure?.showMemoryPanel ?? false}
+          showPipelineStages={disclosure?.showPipelineStages ?? false}
+          playback={playback}
+          onExitPlayback={onExitPlayback}
           onFocusEditor={onFocusEditor}
         />
       );

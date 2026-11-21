@@ -104,7 +104,50 @@ pub struct MachineSnapshot {
     pub generated_assembly: Option<String>,
 }
 
-/// 单步 / 倒退结果：在快照上附加变化差量，驱动前端闪烁动画。
+/// 刚刚执行的那一条指令的结构化数据通路事件（供前端实时驱动 5 阶段 CPU 动画）。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecutedOpDto {
+    /// 动画大类：`alu` / `branch` / `jump` / `load` / `store` / `halt` / `other`
+    pub kind: String,
+    /// 指令助记符（如 `add`、`addi`、`mv`、`sub`、`blt`、`j`、`ecall`）
+    pub op: String,
+    /// 可读指令文本（供 1.取指 指令盒展示，如 `add t2, t0, t1`）
+    pub asm_text: String,
+    /// 执行该指令时的 PC 地址
+    pub pc: u32,
+    /// 运算符或比较符号（`+`/`-`/`×`/`÷`/`%`/`<`/`>=`/`==`/`!=`）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<String>,
+    /// 该指令对应的源码行号（1-based；0 表示无源码映射）
+    pub line: u32,
+    /// 执行后的下一条源码行号（用于判断分支/回跳循环方向）
+    pub next_line: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rs1: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rs1_val: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rs2: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rs2_val: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub imm: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rd: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rd_old_val: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rd_new_val: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mem_addr: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mem_val: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch_taken: Option<bool>,
+}
+
+/// 单步 / 倒退结果：在快照上附加变化差量与数据通路事件，驱动前端实时电路动画。
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct StepPayload {
@@ -114,6 +157,9 @@ pub struct StepPayload {
     pub reg_changes: BTreeMap<String, u32>,
     /// 本步发生变化的内存字节（地址 → 新字节），最多 64 条
     pub mem_changes: BTreeMap<u32, u8>,
+    /// 单步前进刚执行的指令数据通路事件（倒退或多步跳转时为 None）
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub executed: Option<ExecutedOpDto>,
 }
 
 /// 单条测例判定结果。
@@ -317,6 +363,214 @@ pub fn sparse_bytes_to_words(mem: &BTreeMap<u32, u8>, extra_addrs: &[u32]) -> BT
     out
 }
 
+/// 将刚执行的 32 位 RV32IM 机器码及其执行前后寄存器状态解码为前端数据通路脉冲事件。
+pub fn describe_executed_op(
+    word: u32,
+    pc_before: u32,
+    pc_after: u32,
+    line: u32,
+    next_line: u32,
+    regs_before: &BTreeMap<String, u32>,
+    regs_after: &BTreeMap<String, u32>,
+) -> Option<ExecutedOpDto> {
+    use riscv_simulator::{decode, reg_abi_name, Instruction};
+
+    let inst = decode(word).ok()?;
+    let reg_val = |map: &BTreeMap<String, u32>, idx: u8| -> i32 {
+        if idx == 0 {
+            return 0;
+        }
+        let key = format!("x{}", idx);
+        map.get(&key).copied().unwrap_or(0) as i32
+    };
+    let abi = |idx: u8| reg_abi_name(idx as usize).to_string();
+
+    let mut dto = ExecutedOpDto {
+        kind: "other".into(),
+        op: inst.mnemonic().into(),
+        asm_text: inst.mnemonic().into(),
+        pc: pc_before,
+        symbol: None,
+        line,
+        next_line,
+        rs1: None,
+        rs1_val: None,
+        rs2: None,
+        rs2_val: None,
+        imm: None,
+        rd: None,
+        rd_old_val: None,
+        rd_new_val: None,
+        mem_addr: None,
+        mem_val: None,
+        branch_taken: None,
+    };
+
+    match inst {
+        Instruction::Add { rd, rs1, rs2 }
+        | Instruction::Sub { rd, rs1, rs2 }
+        | Instruction::Mul { rd, rs1, rs2 }
+        | Instruction::Div { rd, rs1, rs2 }
+        | Instruction::Divu { rd, rs1, rs2 }
+        | Instruction::Rem { rd, rs1, rs2 }
+        | Instruction::Remu { rd, rs1, rs2 }
+        | Instruction::And { rd, rs1, rs2 }
+        | Instruction::Or { rd, rs1, rs2 }
+        | Instruction::Xor { rd, rs1, rs2 }
+        | Instruction::Sll { rd, rs1, rs2 }
+        | Instruction::Srl { rd, rs1, rs2 }
+        | Instruction::Sra { rd, rs1, rs2 } => {
+            dto.kind = "alu".into();
+            dto.asm_text = format!("{} {}, {}, {}", inst.mnemonic(), abi(rd), abi(rs1), abi(rs2));
+            dto.symbol = Some(
+                match inst {
+                    Instruction::Add { .. } => "+",
+                    Instruction::Sub { .. } => "-",
+                    Instruction::Mul { .. } => "×",
+                    Instruction::Div { .. } | Instruction::Divu { .. } => "÷",
+                    Instruction::Rem { .. } | Instruction::Remu { .. } => "%",
+                    Instruction::And { .. } => "&",
+                    Instruction::Or { .. } => "|",
+                    Instruction::Xor { .. } => "^",
+                    Instruction::Sll { .. } => "<<",
+                    Instruction::Srl { .. } | Instruction::Sra { .. } => ">>",
+                    _ => "+",
+                }
+                .into(),
+            );
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(reg_val(regs_before, rs1));
+            dto.rs2 = Some(abi(rs2));
+            dto.rs2_val = Some(reg_val(regs_before, rs2));
+            if rd != 0 {
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+        }
+        Instruction::Addi { rd, rs1, imm } => {
+            // 真实 RISC-V 硬件中 `mv rd, rs1` 本质就是 `addi rd, rs1, 0`，统一走 5 阶段 ALU 数据通路
+            dto.kind = "alu".into();
+            dto.symbol = Some("+".into());
+            if imm == 0 && rs1 != 0 && rd != 0 {
+                dto.op = "mv".into();
+                dto.asm_text = format!("addi {}, {}, 0  (mv)", abi(rd), abi(rs1));
+            } else {
+                dto.asm_text = format!("addi {}, {}, {}", abi(rd), abi(rs1), imm);
+            }
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(reg_val(regs_before, rs1));
+            dto.imm = Some(imm);
+            if rd != 0 {
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+        }
+        Instruction::Beq { rs1, rs2, .. }
+        | Instruction::Bne { rs1, rs2, .. }
+        | Instruction::Blt { rs1, rs2, .. }
+        | Instruction::Bge { rs1, rs2, .. }
+        | Instruction::Bltu { rs1, rs2, .. }
+        | Instruction::Bgeu { rs1, rs2, .. } => {
+            dto.kind = "branch".into();
+            dto.asm_text = format!(
+                "{} {}, {}, L{}",
+                inst.mnemonic(),
+                abi(rs1),
+                abi(rs2),
+                if next_line > 0 { next_line } else { line }
+            );
+            dto.symbol = Some(
+                match inst {
+                    Instruction::Beq { .. } => "==",
+                    Instruction::Bne { .. } => "!=",
+                    Instruction::Blt { .. } | Instruction::Bltu { .. } => "<",
+                    Instruction::Bge { .. } | Instruction::Bgeu { .. } => ">=",
+                    _ => "?",
+                }
+                .into(),
+            );
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(reg_val(regs_before, rs1));
+            dto.rs2 = Some(abi(rs2));
+            dto.rs2_val = Some(reg_val(regs_before, rs2));
+            dto.branch_taken = Some(pc_after != pc_before.wrapping_add(4));
+        }
+        Instruction::Jal { rd, .. } => {
+            dto.kind = "jump".into();
+            if rd == 0 {
+                dto.op = "j".into();
+                dto.asm_text = if next_line > 0 {
+                    format!("j L{}", next_line)
+                } else {
+                    "j".into()
+                };
+            } else {
+                dto.asm_text = format!("jal {}, L{}", abi(rd), next_line);
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+            dto.branch_taken = Some(true);
+        }
+        Instruction::Jalr { rd, rs1, .. } => {
+            dto.kind = "jump".into();
+            dto.asm_text = format!("jalr {}, {}", abi(rd), abi(rs1));
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(reg_val(regs_before, rs1));
+            if rd != 0 {
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+            dto.branch_taken = Some(true);
+        }
+        Instruction::Lw { rd, rs1, imm }
+        | Instruction::Lh { rd, rs1, imm }
+        | Instruction::Lb { rd, rs1, imm }
+        | Instruction::Lhu { rd, rs1, imm }
+        | Instruction::Lbu { rd, rs1, imm } => {
+            dto.kind = "load".into();
+            dto.asm_text = format!("{} {}, {}({})", inst.mnemonic(), abi(rd), imm, abi(rs1));
+            let base = reg_val(regs_before, rs1);
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(base);
+            dto.imm = Some(imm);
+            dto.mem_addr = Some((base as u32).wrapping_add(imm as u32));
+            if rd != 0 {
+                let loaded = reg_val(regs_after, rd);
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(loaded);
+                dto.mem_val = Some(loaded);
+            }
+        }
+        Instruction::Sw { rs1, rs2, imm }
+        | Instruction::Sh { rs1, rs2, imm }
+        | Instruction::Sb { rs1, rs2, imm } => {
+            dto.kind = "store".into();
+            dto.asm_text = format!("{} {}, {}({})", inst.mnemonic(), abi(rs2), imm, abi(rs1));
+            let base = reg_val(regs_before, rs1);
+            let stored = reg_val(regs_before, rs2);
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(base);
+            dto.rs2 = Some(abi(rs2));
+            dto.rs2_val = Some(stored);
+            dto.imm = Some(imm);
+            dto.mem_addr = Some((base as u32).wrapping_add(imm as u32));
+            dto.mem_val = Some(stored);
+        }
+        Instruction::Ecall | Instruction::Ebreak => {
+            dto.kind = "halt".into();
+            dto.asm_text = inst.mnemonic().into();
+        }
+        _ => {}
+    }
+
+    Some(dto)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -344,6 +598,7 @@ mod tests {
             snapshot: snap,
             reg_changes: BTreeMap::from([("x5".into(), 10)]),
             mem_changes: BTreeMap::new(),
+            executed: None,
         };
         let v = serde_json::to_value(&step).unwrap();
         assert_eq!(v["pcLine"], 2);
@@ -353,5 +608,31 @@ mod tests {
         assert_eq!(v["memoryWords"]["0x1000"], 42);
         assert_eq!(v["regChanges"]["x5"], 10);
         assert!(v.get("memChanges").is_some());
+    }
+
+    #[test]
+    fn describe_executed_op_decodes_add_and_mv() {
+        // add t2, t0, t1 => rd=7, rs1=5, rs2=6
+        let add_word: u32 = (6 << 20) | (5 << 15) | (7 << 7) | 0x33;
+        let before = BTreeMap::from([("x5".into(), 3), ("x6".into(), 5), ("x7".into(), 0)]);
+        let after = BTreeMap::from([("x5".into(), 3), ("x6".into(), 5), ("x7".into(), 8)]);
+        let op = describe_executed_op(add_word, 0, 4, 2, 3, &before, &after).unwrap();
+        assert_eq!(op.kind, "alu");
+        assert_eq!(op.op, "add");
+        assert_eq!(op.symbol.as_deref(), Some("+"));
+        assert_eq!(op.rs1.as_deref(), Some("t0"));
+        assert_eq!(op.rs2.as_deref(), Some("t1"));
+        assert_eq!(op.rd.as_deref(), Some("t2"));
+        assert_eq!(op.rd_old_val, Some(0));
+        assert_eq!(op.rd_new_val, Some(8));
+
+        // mv t3, t0 (addi x28, x5, 0) 统一走 5 阶段 ALU (+0) 通路
+        let mv_word: u32 = (5 << 15) | (28 << 7) | 0x13;
+        let mv_op = describe_executed_op(mv_word, 4, 8, 3, 4, &before, &after).unwrap();
+        assert_eq!(mv_op.kind, "alu");
+        assert_eq!(mv_op.op, "mv");
+        assert_eq!(mv_op.imm, Some(0));
+        assert_eq!(mv_op.rs1.as_deref(), Some("t0"));
+        assert_eq!(mv_op.rd.as_deref(), Some("t3"));
     }
 }

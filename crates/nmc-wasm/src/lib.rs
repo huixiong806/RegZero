@@ -7,8 +7,8 @@
 
 use neomagic_core::config::{Goal, Language, LevelConfig, TestCase};
 use neomagic_core::dto::{
-    sparse_bytes_to_words, verdict_to_submit_dto, LevelPayload, LevelSummary, MachineSnapshot,
-    StepPayload, SubmitDto, TestCasePreview, WikiEntry,
+    describe_executed_op, sparse_bytes_to_words, verdict_to_submit_dto, LevelPayload, LevelSummary,
+    MachineSnapshot, StepPayload, SubmitDto, TestCasePreview, WikiEntry,
 };
 use neomagic_core::levels::LevelStore;
 use neomagic_core::progress::UserProgress;
@@ -218,17 +218,46 @@ impl EngineCore {
         Ok(snap)
     }
 
-    /// 单步前进 `n` 步。
+    /// 单步前进 `n` 步（`n == 1` 时附带本步指令的数据通路脉冲信息）。
     pub fn debug_step(&mut self, n: u32) -> Result<StepPayload, String> {
         let s = self
             .debug
             .as_mut()
             .ok_or_else(|| "尚未进入调试会话，请先点击「调试」".to_string())?;
-        let res = s.sim.step(n.max(1)).map_err(|e| e.to_string())?;
+        let steps = n.max(1);
+        let pre_capture = if steps == 1 && !s.sim.is_halted() {
+            let pc_before = s.sim.get_pc();
+            let word = if pc_before % 4 == 0 {
+                s.runner.words().get((pc_before / 4) as usize).copied()
+            } else {
+                None
+            };
+            let regs_before: BTreeMap<String, u32> = s.sim.get_all_regs().into_iter().collect();
+            Some((pc_before, s.runner.line_at(pc_before), word, regs_before))
+        } else {
+            None
+        };
+
+        let res = s.sim.step(steps).map_err(|e| e.to_string())?;
+        let snapshot = make_snapshot(&s.sim, &s.runner, &s.watch_addrs);
+        let executed = pre_capture.and_then(|(pc_before, line_before, word, regs_before)| {
+            word.and_then(|w| {
+                describe_executed_op(
+                    w,
+                    pc_before,
+                    snapshot.pc,
+                    line_before,
+                    snapshot.pc_line,
+                    &regs_before,
+                    &snapshot.regs,
+                )
+            })
+        });
         Ok(StepPayload {
-            snapshot: make_snapshot(&s.sim, &s.runner, &s.watch_addrs),
+            snapshot,
             reg_changes: res.reg_changes.into_iter().collect(),
             mem_changes: res.mem_changes.into_iter().take(64).collect(),
+            executed,
         })
     }
 
@@ -243,6 +272,7 @@ impl EngineCore {
             snapshot: make_snapshot(&s.sim, &s.runner, &s.watch_addrs),
             reg_changes: res.reg_changes.into_iter().collect(),
             mem_changes: res.mem_changes.into_iter().take(64).collect(),
+            executed: None,
         })
     }
 

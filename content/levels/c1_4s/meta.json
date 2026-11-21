@@ -10,6 +10,9 @@
   "prerequisites": ["1-4"],
   "parInstructions": 4,
   "concepts": ["in-place-swap", "modular-arithmetic"],
+  "ui": {
+    "debugControls": true
+  },
   "goalSummary": {
     "before": "t0 = a，t1 = b；其他所有通用寄存器均被锁定禁用",
     "after": "仅用 add 与 sub 就地交换 t0 与 t1（t0 = b，t1 = a）"

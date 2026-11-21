@@ -9,6 +9,7 @@
   "language": "asm",
   "prerequisites": [],
   "concepts": ["register", "add"],
+  "ui": {},
   "goalSummary": {
     "before": "t0 与 t1 中各存着一个整数",
     "after": "计算 t0 + t1，将结果写入 t2"
@@ -33,6 +34,7 @@
   ],
   "sandbox": {
     "type": "manual-cpu",
+    "focusWarmupFirst": true,
     "modules": ["regs", "alu"],
     "recordToAsm": true,
     "focusRegs": ["t0", "t1", "t2"],

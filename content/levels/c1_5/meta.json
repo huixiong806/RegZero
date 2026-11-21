@@ -9,6 +9,9 @@
   "language": "asm",
   "prerequisites": ["1-4"],
   "concepts": ["mul", "div", "rem"],
+  "ui": {
+    "debugControls": true
+  },
   "goalSummary": {
     "before": "t0 为物品总数，t1 为每箱容量（非零）",
     "after": "t2 = 整箱数（t0 / t1），t3 = 剩余零头（t0 % t1），t4 = 已装箱总数（t2 × t1）"

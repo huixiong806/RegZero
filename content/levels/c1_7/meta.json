@@ -8,7 +8,12 @@
   "allowLocalFile": true,
   "language": "asm",
   "prerequisites": ["1-6"],
-  "concepts": ["loop", "backward-jump", "accumulator"],
+  "concepts": ["loop", "backward-jump", "accumulator", "zero"],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "debugControls": true
+  },
   "goalSummary": {
     "before": "t0 中是一个非负整数 n",
     "after": "计算 1 + 2 + ... + n，存入 t1（n = 0 时 t1 = 0）"
@@ -23,13 +28,17 @@
       "text": "往回跳，就是**循环**！配一个计数器和一个累加器，几行指令就能把重复动作执行任意多次。"
     },
     {
+      "tag": "新帮手 zero",
+      "text": "本关解锁特殊寄存器 `zero`：它**永远等于 0**，用 `addi t1, zero, 0` 就能方便给累加器和计数器设初值。"
+    },
+    {
       "tag": "通关目标",
       "text": "计算 `1 + 2 + … + n`（`n` 在 `t0` 中），将总和存入 `t1`。别忘了考虑 `n = 0` 的边界情况！"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "pcTrack"],
+    "modules": ["regs", "constants", "alu"],
     "recordToAsm": true,
     "focusRegs": ["t0", "t1", "t2", "zero"],
     "regRoles": {
@@ -38,31 +47,12 @@
       "t2": "计数器 i",
       "zero": "恒为 0"
     },
-    "pcTrack": {
-      "cases": [
-        {
-          "label": "n = 3（走 3 圈回跳，累加出 6）",
-          "initial": { "regs": { "t0": 3, "t1": 0, "t2": 0, "zero": 0 } },
-          "goal": { "regs": { "t1": 6 } }
-        },
-        {
-          "label": "n = 0（直接跳出空循环，结果为 0）",
-          "initial": { "regs": { "t0": 0, "t1": 0, "t2": 0, "zero": 0 } },
-          "goal": { "regs": { "t1": 0 } }
-        }
-      ],
-      "program": [
-        { "op": "addi", "dst": "t1", "src": "zero", "imm": 0, "asm": "addi t1, zero, 0" },
-        { "op": "addi", "dst": "t2", "src": "zero", "imm": 1, "asm": "addi t2, zero, 1" },
-        { "label": "loop", "op": "blt", "a": "t0", "b": "t2", "target": "done", "asm": "blt t0, t2, done" },
-        { "op": "add", "dst": "t1", "a": "t1", "b": "t2", "asm": "add t1, t1, t2" },
-        { "op": "addi", "dst": "t2", "src": "t2", "imm": 1, "asm": "addi t2, t2, 1" },
-        { "op": "j", "target": "loop", "asm": "j loop" },
-        { "label": "done", "op": "halt", "asm": "ecall" }
-      ]
-    },
+    "constantCards": [
+      { "label": "1", "value": 1, "kind": "immediate" }
+    ],
+    "aluOps": ["+"],
     "warmupPuzzle": {
-      "prompt": "本关没有引入任何新指令！把标签贴在上方、用 j loop 往回跳，亲手走完 n = 3 的 3 圈累加。",
+      "prompt": "这一关完全交给你自己写！把标签贴在上方、用 j 往回跳形成循环，点击提交即可在左侧看循环动画一步步累加。",
       "initial": {
         "regs": { "t0": 3, "t1": 0, "t2": 0, "zero": 0 }
       },
@@ -76,7 +66,7 @@
     "readonlySuffix": 1
   },
   "hints": [
-    { "level": 1, "type": "diagram", "content": "CPU 没有专门的 while/for 指令：只要在循环顶部放一个 loop: 标签，循环末尾写 j loop 往回跳，并在顶部用 blt t0, t2, done 检查是否超过 n。" },
+    { "level": 1, "type": "diagram", "content": "CPU 并没有专门的「循环指令」：只要在重复代码开头放一个 loop: 标签，末尾写 j loop 往回跳，并在开头用 blt t0, t2, done 检查是否已经超过 n。" },
     { "level": 2, "type": "steps", "content": "1. 初始化 t1 = 0（累加和）、t2 = 1（当前数）；2. loop: 若 t0 < t2 跳到 done；3. t1 = t1 + t2；4. t2 = t2 + 1；5. j loop；6. done:。" },
     { "level": 3, "type": "snippet", "content": "addi t1, zero, 0\naddi t2, zero, 1\nloop:\nblt  t0, t2, done\nadd  t1, t1, t2\naddi t2, t2, 1\nj    loop\ndone:" }
   ],

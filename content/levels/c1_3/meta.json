@@ -9,6 +9,9 @@
   "language": "asm",
   "prerequisites": ["1-2"],
   "concepts": ["sub", "mv", "overwrite", "temp-register"],
+  "ui": {
+    "immediatePort": true
+  },
   "goalSummary": {
     "before": "t0 = a，t1 = b（t3 为空闲暂存槽）",
     "after": "计算 t2 = a - b，并且交换 t0 与 t1 的值"
@@ -29,7 +32,7 @@
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "alu"],
+    "modules": ["regs", "constants", "alu"],
     "recordToAsm": true,
     "focusRegs": ["t0", "t1", "t2", "t3"],
     "regRoles": {
@@ -38,8 +41,11 @@
       "t2": "差值",
       "t3": "暂存槽"
     },
-    "aluOps": ["-"],
-    "allowCopy": true,
+    "constantCards": [
+      { "label": "0", "value": 0, "kind": "immediate" }
+    ],
+    "aluOps": ["+", "-"],
+    "allowCopy": false,
     "warmupPuzzle": {
       "prompt": "先算 t0 - t1 放入 t2，再借助空闲的 t3 把 t0(10) 与 t1(3) 的值互换。",
       "initial": {

@@ -92,7 +92,7 @@
     {
       "id": "tip-const",
       "heading": "用 zero 构造常量",
-      "unlockAny": ["addi", "zero"],
+      "unlockAny": ["zero"],
       "kind": "markdown",
       "markdown": "利用恒为 0 的 `zero` 寄存器，可以直接把一个小整数装进寄存器：\n\n```asm\naddi t1, zero, 42   # t1 = 0 + 42 = 42\n```"
     },
