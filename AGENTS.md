@@ -11,7 +11,7 @@
   2. `documents/目标与形态.md`（4 套强游戏化交互沙盘、教学闭环、7 章路线与 DAG 支线体系）
   3. `documents/架构.md`（Web + `nmc-wasm` + `nmc-bridge` 协议与模块边界）
   4. `documents/代码质量规范.md`（分层依赖红线、数据驱动铁律、文件规模与门禁标准）
-  5. 写关卡时读 `documents/关卡编写规范.md`；查规格与指令集读 `documents/总设计.md` 与 `documents/术语表.md`。
+  5. 设计关卡玩法与文案时读 `documents/关卡设计规范.md`；配置关卡 JSON/测例文件时读 `documents/关卡编写规范.md`；查规格与指令集读 `documents/总设计.md` 与 `documents/术语表.md`。
 
 ## 2. 已拍板的架构与玩法红线（勿擅自推翻）
 
