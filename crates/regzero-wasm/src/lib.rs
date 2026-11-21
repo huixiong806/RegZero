@@ -1,18 +1,18 @@
 //! 浏览器内置引擎（WASM 薄适配层）。
 //!
-//! 所有领域逻辑收口在 `neomagic-core`；本 crate 仅负责：
+//! 所有领域逻辑收口在 `regzero-core`；本 crate 仅负责：
 //! 1. 维护单线程 Web Worker 内的调试会话状态；
 //! 2. 通过 `wasm-bindgen` 暴露标准 camelCase JSON 接口；
 //! 3. 提供原生可单测的 `EngineCore`，保证前后端契约在 `cargo test` 中受保护。
 
-use neomagic_core::config::{Goal, Language, LevelConfig, TestCase};
-use neomagic_core::dto::{
+use regzero_core::config::{Goal, Language, LevelConfig, TestCase};
+use regzero_core::dto::{
     describe_executed_op, sparse_bytes_to_words, verdict_to_submit_dto, LevelPayload, LevelSummary,
     MachineSnapshot, StepPayload, SubmitDto, TestCasePreview, WikiEntry,
 };
-use neomagic_core::levels::LevelStore;
-use neomagic_core::progress::UserProgress;
-use neomagic_core::runner::Runner;
+use regzero_core::levels::LevelStore;
+use regzero_core::progress::UserProgress;
+use regzero_core::runner::Runner;
 use riscv_simulator::Simulator;
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
@@ -176,7 +176,7 @@ impl EngineCore {
         let instruction_count = Runner::new(bundle.config.clone(), code)
             .ok()
             .map(|r| r.words().len());
-        let verdict = neomagic_core::judge(&bundle.config, code);
+        let verdict = regzero_core::judge(&bundle.config, code);
         Ok(verdict_to_submit_dto(
             level_id,
             verdict,

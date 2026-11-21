@@ -1,6 +1,6 @@
 //! 前后端共享传输结构体（DTO），统一 `camelCase`。
 //!
-//! 同时服务于 `crates/nmc-wasm` 与未来的 `crates/nmc-bridge`，
+//! 同时服务于 `crates/regzero-wasm` 与未来的 `crates/regzero-bridge`，
 //! 对应的 TypeScript 类型定义在 `web/src/engine/types.ts`。
 
 use crate::config::{Language, MemExpect, TestCase};

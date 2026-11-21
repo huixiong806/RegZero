@@ -74,7 +74,7 @@ export function MemoryPanel({
                 key={`${addr}-${changed ? flashNonce : 0}`}
                 className={`rounded-lg border px-2 py-1.5 font-mono text-xs ${
                   changed
-                    ? 'nmc-flash-write border-cyan-400/70 bg-cyan-950/30 text-cyan-200'
+                    ? 'rz-flash-write border-cyan-400/70 bg-cyan-950/30 text-cyan-200'
                     : 'border-slate-800 bg-slate-950/60 text-slate-200'
                 }`}
               >

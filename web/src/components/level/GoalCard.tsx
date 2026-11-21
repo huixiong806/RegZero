@@ -78,7 +78,7 @@ export function GoalCard({
           type="button"
           onClick={onOpenLesson}
           className={`inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-cyan-500/50 hover:text-cyan-200 ${
-            pulseLessonBtn ? 'nmc-pulse-anchor' : ''
+            pulseLessonBtn ? 'rz-pulse-anchor' : ''
           }`}
         >
           <BookOpen className="h-3.5 w-3.5 text-cyan-400" /> 规则

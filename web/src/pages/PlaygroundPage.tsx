@@ -51,7 +51,7 @@ export function PlaygroundPage() {
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            <Globe className="h-3.5 w-3.5" /> 在线编辑（nmc-wasm）
+            <Globe className="h-3.5 w-3.5" /> 在线编辑
           </button>
           <button
             type="button"
@@ -108,11 +108,11 @@ export function PlaygroundPage() {
           <div className="space-y-1">
             <div className="font-semibold">
               {workMode === 'local-file'
-                ? '本地单文件监听模式（Phase 2 通过 nmc-bridge 启用）'
-                : '本地 C 工程模式（Phase 3 通过 nmc-bridge + nmc.project.json 启用）'}
+                ? '本地单文件监听模式（Phase 2 通过 regzero-bridge 启用）'
+                : '本地 C 工程模式（Phase 3 通过 regzero-bridge + regzero.project.json 启用）'}
             </div>
             <p className="text-amber-200/80">
-              本模式已预留统一 EngineClient 与 127.0.0.1:17320 协议边界。上线 nmc-bridge 后，你在本地 VS Code 保存代码将自动同步到此工作台运行、单步回放并展示 Diff。现在可以先切回「在线编辑（nmc-wasm）」体验完整调试器。
+              本模式已预留统一 EngineClient 与 127.0.0.1:17320 协议边界。上线 regzero-bridge 后，你在本地 VS Code 保存代码将自动同步到此工作台运行、单步回放并展示 Diff。现在可以先切回「在线编辑」体验完整调试器。
             </p>
           </div>
         </div>

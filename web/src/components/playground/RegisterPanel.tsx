@@ -85,7 +85,7 @@ export function RegisterPanel({
               key={`${reg.xName}-${changed ? flashNonce : 0}`}
               className={`rounded-xl border px-2.5 py-1.5 font-mono transition ${
                 changed
-                  ? 'nmc-flash-write border-cyan-400 bg-cyan-950/35'
+                  ? 'rz-flash-write border-cyan-400 bg-cyan-950/35'
                   : isFocus
                     ? 'border-slate-700/80 bg-slate-950/80'
                     : 'border-slate-800/70 bg-slate-950/40'

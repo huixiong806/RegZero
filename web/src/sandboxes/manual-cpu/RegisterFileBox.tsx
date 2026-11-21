@@ -225,9 +225,9 @@ export function RegisterFileBox({
                     onClick={() => !playbackMode && onSelectOperand({ kind: 'reg', name: regName })}
                     className={`relative flex flex-col items-center overflow-hidden rounded-lg border px-1 py-1 font-mono transition ${
                       isWritten
-                        ? 'nmc-flash-write border-emerald-400 bg-emerald-950/50'
+                        ? 'rz-flash-write border-emerald-400 bg-emerald-950/50'
                         : isRead
-                          ? 'nmc-pulse-read border-cyan-400 bg-cyan-950/40'
+                          ? 'rz-pulse-read border-cyan-400 bg-cyan-950/40'
                           : val !== 0
                             ? 'border-slate-700 bg-slate-900 text-cyan-200 hover:border-cyan-500/60'
                             : 'border-slate-800/80 bg-slate-950/60 text-slate-600 hover:border-slate-700'
@@ -244,7 +244,7 @@ export function RegisterFileBox({
                     <span
                       className={`pointer-events-none max-w-full truncate text-[11px] font-bold ${
                         isWritten
-                          ? 'nmc-pop-new text-emerald-200'
+                          ? 'rz-pop-new text-emerald-200'
                           : val !== 0
                             ? 'text-cyan-200'
                             : 'text-slate-600'
@@ -286,11 +286,11 @@ export function RegisterFileBox({
                     playbackMode ? 'cursor-default' : 'cursor-pointer'
                   } ${
                     isWarn
-                      ? 'nmc-flash-warn'
+                      ? 'rz-flash-warn'
                       : isWritten
-                        ? 'nmc-flash-write'
+                        ? 'rz-flash-write'
                         : isRead
-                          ? 'nmc-pulse-read'
+                          ? 'rz-pulse-read'
                           : ''
                   } ${
                     isDragOver
@@ -321,7 +321,7 @@ export function RegisterFileBox({
                     {showEjectOld && (
                       <span
                         aria-hidden="true"
-                        className="nmc-eject-old pointer-events-none absolute left-1/2 top-0 rounded bg-rose-500/20 px-1 font-mono text-xs font-bold text-rose-300 line-through"
+                        className="rz-eject-old pointer-events-none absolute left-1/2 top-0 rounded bg-rose-500/20 px-1 font-mono text-xs font-bold text-rose-300 line-through"
                       >
                         {pulse.oldDestVal}
                       </span>
@@ -329,7 +329,7 @@ export function RegisterFileBox({
                     <span
                       className={`font-mono font-bold tracking-tight ${
                         isCompact2Row ? 'text-base' : 'text-lg'
-                      } ${isWritten ? 'nmc-pop-new text-emerald-200' : 'text-cyan-200'}`}
+                      } ${isWritten ? 'rz-pop-new text-emerald-200' : 'text-cyan-200'}`}
                     >
                       {val}
                     </span>
@@ -377,7 +377,7 @@ export function RegisterFileBox({
                 playbackConst && inDecodeOrExec ? (
                   <div
                     key={`imm-${pulse?.nonce ?? 0}`}
-                    className="nmc-pop-new flex items-center justify-center rounded-xl border border-amber-400/75 bg-amber-500/15 px-2 py-2 font-mono shadow-[0_0_12px_rgba(251,191,36,0.28)]"
+                    className="rz-pop-new flex items-center justify-center rounded-xl border border-amber-400/75 bg-amber-500/15 px-2 py-2 font-mono shadow-[0_0_12px_rgba(251,191,36,0.28)]"
                   >
                     <span className="text-base font-bold text-amber-200">
                       #{playbackConst.value}
@@ -433,7 +433,7 @@ export function RegisterFileBox({
                   fill="none"
                   stroke={inDecode && pulse?.leftSource ? '#22d3ee' : leftLit ? '#0891b2' : '#1e293b'}
                   strokeWidth={inDecode && pulse?.leftSource ? 2.6 : leftLit ? 2 : 1.6}
-                  className={inDecode && pulse?.leftSource ? 'nmc-wire-flow' : undefined}
+                  className={inDecode && pulse?.leftSource ? 'rz-wire-flow' : undefined}
                 />
 
                 {showConstPort ? (
@@ -444,7 +444,7 @@ export function RegisterFileBox({
                       fill="none"
                       stroke={inDecode && rightIsReg ? '#22d3ee' : regRightLit ? '#0891b2' : '#1e293b'}
                       strokeWidth={inDecode && rightIsReg ? 2.6 : regRightLit ? 2 : 1.6}
-                      className={inDecode && rightIsReg ? 'nmc-wire-flow' : undefined}
+                      className={inDecode && rightIsReg ? 'rz-wire-flow' : undefined}
                     />
                     {/* 立即数端口正下方（88%）折线汇入右输入口（75%） */}
                     <path
@@ -452,7 +452,7 @@ export function RegisterFileBox({
                       fill="none"
                       stroke={inDecode && rightIsConst ? '#fbbf24' : immRightLit ? '#d97706' : '#1e293b'}
                       strokeWidth={inDecode && rightIsConst ? 2.6 : immRightLit ? 2 : 1.6}
-                      className={inDecode && rightIsConst ? 'nmc-wire-flow' : undefined}
+                      className={inDecode && rightIsConst ? 'rz-wire-flow' : undefined}
                     />
                     {/* 汇流节点（真实 CPU 的右操作数二选一汇流点） */}
                     <circle
@@ -471,7 +471,7 @@ export function RegisterFileBox({
                     fill="none"
                     stroke={inDecode && rightIsReg ? '#22d3ee' : regRightLit ? '#0891b2' : '#1e293b'}
                     strokeWidth={inDecode && rightIsReg ? 2.6 : regRightLit ? 2 : 1.6}
-                    className={inDecode && rightIsReg ? 'nmc-wire-flow' : undefined}
+                    className={inDecode && rightIsReg ? 'rz-wire-flow' : undefined}
                   />
                 )}
               </svg>
@@ -481,7 +481,7 @@ export function RegisterFileBox({
                 <span
                   key={`bus-l-${pulse.nonce}`}
                   style={{ left: '25%', animationDuration: busDropDur }}
-                  className="nmc-bus-drop pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/80 bg-cyan-950/95 px-2 py-0.5 font-mono text-[11px] font-bold text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.4)]"
+                  className="rz-bus-drop pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-cyan-300/80 bg-cyan-950/95 px-2 py-0.5 font-mono text-[11px] font-bold text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.4)]"
                 >
                   <span className="text-amber-300">
                     {pulse.leftSource.kind === 'reg' ? pulse.leftSource.name : '#'}
@@ -502,9 +502,9 @@ export function RegisterFileBox({
                   className={`${
                     showConstPort
                       ? rightIsConst
-                        ? 'nmc-bus-drop-imm-r'
-                        : 'nmc-bus-drop-reg-r'
-                      : 'nmc-bus-drop'
+                        ? 'rz-bus-drop-imm-r'
+                        : 'rz-bus-drop-reg-r'
+                      : 'rz-bus-drop'
                   } pointer-events-none absolute top-0 z-10 inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-[11px] font-bold shadow ${
                     rightIsConst
                       ? 'border-amber-300/80 bg-amber-950/95 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.4)]'

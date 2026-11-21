@@ -441,7 +441,7 @@ export function ManualCpuSandbox({
           const wbPath = `M 24 332 L 10 332 L 10 ${wbTopY} L 24 ${wbTopY}`;
           const wbTravelDur = `${getStageSeconds('writeback', speed, 0.58).toFixed(2)}s`;
           const riseStyle = {
-            '--nmc-wb-top': wbTopPct,
+            '--rz-wb-top': wbTopPct,
             animationDuration: wbTravelDur,
           } as CSSProperties;
 
@@ -458,14 +458,14 @@ export function ManualCpuSandbox({
                   stroke={inWriteback ? '#34d399' : '#1e293b'}
                   strokeWidth={inWriteback ? 2.6 : 1.5}
                   strokeDasharray={inWriteback ? '6 5' : undefined}
-                  className={inWriteback ? 'nmc-wire-flow' : undefined}
+                  className={inWriteback ? 'rz-wire-flow' : undefined}
                 />
               </svg>
               {inWriteback && !wbLanded && activePulse?.newDestVal !== undefined && (
                 <span
                   key={`wb-pill-${activePulse.nonce}`}
                   style={riseStyle}
-                  className="nmc-wb-rise pointer-events-none absolute left-[10px] z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full border border-emerald-200 bg-emerald-400 px-1.5 font-mono text-[10px] font-extrabold text-slate-950 shadow-[0_0_14px_rgba(52,211,153,0.7)]"
+                  className="rz-wb-rise pointer-events-none absolute left-[10px] z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full border border-emerald-200 bg-emerald-400 px-1.5 font-mono text-[10px] font-extrabold text-slate-950 shadow-[0_0_14px_rgba(52,211,153,0.7)]"
                 >
                   {activePulse.newDestVal}
                 </span>
@@ -506,7 +506,7 @@ export function ManualCpuSandbox({
                           <span
                             key={`old-pc-${activePulse.nonce}`}
                             aria-hidden="true"
-                            className="nmc-eject-old pointer-events-none absolute left-1/2 top-0 whitespace-nowrap rounded bg-rose-500/20 px-1 text-[10px] font-bold text-rose-300 line-through"
+                            className="rz-eject-old pointer-events-none absolute left-1/2 top-0 whitespace-nowrap rounded bg-rose-500/20 px-1 text-[10px] font-bold text-rose-300 line-through"
                           >
                             第 {activePulse.line} 行
                           </span>
@@ -516,8 +516,8 @@ export function ManualCpuSandbox({
                         className={`rounded px-1.5 py-0.5 text-[10px] font-bold transition ${
                           pcJustJumped
                             ? isLoopJump
-                              ? 'nmc-pop-new border border-amber-400/70 bg-amber-500/20 text-amber-200'
-                              : 'nmc-pop-new border border-cyan-400/70 bg-cyan-500/20 text-cyan-200'
+                              ? 'rz-pop-new border border-amber-400/70 bg-amber-500/20 text-amber-200'
+                              : 'rz-pop-new border border-cyan-400/70 bg-cyan-500/20 text-cyan-200'
                             : 'bg-slate-900 text-slate-400'
                         }`}
                       >
@@ -628,14 +628,14 @@ export function ManualCpuSandbox({
                   }
                   strokeWidth={inBranchReturn ? 2.6 : 1.5}
                   strokeDasharray={inBranchReturn ? '6 5' : undefined}
-                  className={inBranchReturn ? 'nmc-wire-flow' : undefined}
+                  className={inBranchReturn ? 'rz-wire-flow' : undefined}
                 />
               </svg>
               {inBranchReturn && !wbLanded && activePulse?.nextLine !== undefined && (
                 <span
                   key={`jump-pill-${activePulse.nonce}`}
                   style={{ animationDuration: jumpTravelDur }}
-                  className={`nmc-jump-rise pointer-events-none absolute left-[14px] z-10 flex h-5 min-w-[28px] items-center justify-center rounded-full border px-1.5 font-mono text-[10px] font-extrabold text-slate-950 ${
+                  className={`rz-jump-rise pointer-events-none absolute left-[14px] z-10 flex h-5 min-w-[28px] items-center justify-center rounded-full border px-1.5 font-mono text-[10px] font-extrabold text-slate-950 ${
                     isLoopJump
                       ? 'border-amber-200 bg-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.75)]'
                       : 'border-cyan-100 bg-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.75)]'

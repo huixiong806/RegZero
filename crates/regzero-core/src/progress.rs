@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn round_trip_through_a_file() {
-        let dir = std::env::temp_dir().join(format!("nmc-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("regzero-test-{}", std::process::id()));
         let path = dir.join(PROGRESS_FILE);
         let _ = std::fs::remove_dir_all(&dir);
 
@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn corrupt_file_is_backed_up_and_reset() {
-        let dir = std::env::temp_dir().join(format!("nmc-test-bad-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("regzero-test-bad-{}", std::process::id()));
         let path = dir.join(PROGRESS_FILE);
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();

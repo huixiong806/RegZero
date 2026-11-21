@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import init, { WasmEngine } from '../wasm-pkg/nmc_wasm.js';
+import init, { WasmEngine } from '../wasm-pkg/regzero_wasm.js';
 
 export type WorkerMethod =
   | 'listLevels'

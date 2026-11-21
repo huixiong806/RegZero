@@ -21,7 +21,7 @@ interface PendingCall {
 }
 
 /**
- * 基于浏览器 Web Worker + `nmc-wasm` 的零安装在线引擎客户端。
+ * 基于浏览器 Web Worker + `regzero-wasm` 的零安装在线引擎客户端。
  * 若发生异常超时，自动终止并重建 Worker，避免冻结主线程。
  */
 export class OnlineWasmClient implements EngineClient {

@@ -1,8 +1,8 @@
 import type { SubmitDto, UserProgress } from './types';
 
-const PROGRESS_KEY = 'nmc.progress.v1';
-const DRAFT_PREFIX = 'nmc.draft.v1.';
-const BRIEFING_KEY = 'nmc.briefing.v1';
+const PROGRESS_KEY = 'regzero.progress.v1';
+const DRAFT_PREFIX = 'regzero.draft.v1.';
+const BRIEFING_KEY = 'regzero.briefing.v1';
 
 export function defaultProgress(): UserProgress {
   return {

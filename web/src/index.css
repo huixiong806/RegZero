@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@keyframes nmc-flash-write {
+@keyframes rz-flash-write {
   0% {
     background-color: rgba(34, 211, 238, 0.35);
     box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.7);
@@ -11,7 +11,7 @@
   }
 }
 
-@keyframes nmc-flash-warn {
+@keyframes rz-flash-warn {
   0% {
     background-color: rgba(251, 146, 60, 0.38);
     box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.8);
@@ -22,7 +22,7 @@
   }
 }
 
-@keyframes nmc-pulse-anchor {
+@keyframes rz-pulse-anchor {
   0% {
     box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.85);
     border-color: rgba(34, 211, 238, 0.95);
@@ -38,7 +38,7 @@
   }
 }
 
-@keyframes nmc-pulse-read {
+@keyframes rz-pulse-read {
   0% {
     border-color: rgba(34, 211, 238, 0.95);
     box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
@@ -49,7 +49,7 @@
   }
 }
 
-@keyframes nmc-eject-old {
+@keyframes rz-eject-old {
   0% {
     opacity: 0.95;
     transform: translate(-50%, 0) scale(1);
@@ -60,7 +60,7 @@
   }
 }
 
-@keyframes nmc-pop-new {
+@keyframes rz-pop-new {
   0% {
     opacity: 0.4;
     transform: scale(0.76);
@@ -75,7 +75,7 @@
   }
 }
 
-@keyframes nmc-chip-charge {
+@keyframes rz-chip-charge {
   0% {
     filter: drop-shadow(0 0 0 rgba(34, 211, 238, 0));
   }
@@ -87,7 +87,7 @@
   }
 }
 
-@keyframes nmc-wire-flow {
+@keyframes rz-wire-flow {
   from {
     stroke-dashoffset: 24;
   }
@@ -96,7 +96,7 @@
   }
 }
 
-@keyframes nmc-copy-slide {
+@keyframes rz-copy-slide {
   0% {
     opacity: 0;
     transform: translateX(-28px) scale(0.85);
@@ -114,7 +114,7 @@
   }
 }
 
-@keyframes nmc-bus-drop {
+@keyframes rz-bus-drop {
   0% {
     opacity: 0;
     top: 0%;
@@ -138,7 +138,7 @@
 }
 
 /* 右侧操作数来自寄存器堆：从 57.5% 出发沿折线汇流到右输入口 75% */
-@keyframes nmc-bus-drop-reg-r {
+@keyframes rz-bus-drop-reg-r {
   0% {
     opacity: 0;
     left: 57.5%;
@@ -178,7 +178,7 @@
 }
 
 /* 右侧操作数来自立即数端口：从 88% 正下方出发沿折线汇流到右输入口 75% */
-@keyframes nmc-bus-drop-imm-r {
+@keyframes rz-bus-drop-imm-r {
   0% {
     opacity: 0;
     left: 88%;
@@ -217,7 +217,7 @@
   }
 }
 
-@keyframes nmc-wb-rise {
+@keyframes rz-wb-rise {
   0% {
     opacity: 0;
     top: 90%;
@@ -230,18 +230,18 @@
   }
   86% {
     opacity: 1;
-    top: var(--nmc-wb-top, 18%);
+    top: var(--rz-wb-top, 18%);
     transform: translate(-50%, -50%) scale(1);
   }
   100% {
     opacity: 0;
-    top: var(--nmc-wb-top, 18%);
+    top: var(--rz-wb-top, 18%);
     transform: translate(-50%, -50%) scale(0.82);
   }
 }
 
 /* 跳转/循环目标行号胶囊沿右侧回流轨爬升，直抵顶部当前指令 PC 槽 */
-@keyframes nmc-jump-rise {
+@keyframes rz-jump-rise {
   0% {
     opacity: 0;
     top: 64%;
@@ -264,61 +264,61 @@
   }
 }
 
-.nmc-flash-write {
-  animation: nmc-flash-write 0.85s ease-out;
+.rz-flash-write {
+  animation: rz-flash-write 0.85s ease-out;
 }
 
-.nmc-flash-warn {
-  animation: nmc-flash-warn 0.9s ease-out;
+.rz-flash-warn {
+  animation: rz-flash-warn 0.9s ease-out;
 }
 
-.nmc-pulse-anchor {
-  animation: nmc-pulse-anchor 0.85s ease-out;
+.rz-pulse-anchor {
+  animation: rz-pulse-anchor 0.85s ease-out;
 }
 
-.nmc-pulse-read {
-  animation: nmc-pulse-read 0.9s ease-out;
+.rz-pulse-read {
+  animation: rz-pulse-read 0.9s ease-out;
 }
 
-.nmc-eject-old {
-  animation: nmc-eject-old 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.rz-eject-old {
+  animation: rz-eject-old 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.nmc-pop-new {
-  animation: nmc-pop-new 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+.rz-pop-new {
+  animation: rz-pop-new 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.nmc-chip-charge {
-  animation: nmc-chip-charge 0.85s ease-out;
+.rz-chip-charge {
+  animation: rz-chip-charge 0.85s ease-out;
 }
 
-.nmc-wire-flow {
+.rz-wire-flow {
   stroke-dasharray: 6 6;
-  animation: nmc-wire-flow 0.55s linear infinite;
+  animation: rz-wire-flow 0.55s linear infinite;
 }
 
-.nmc-copy-slide {
-  animation: nmc-copy-slide 0.62s cubic-bezier(0.32, 0, 0.18, 1) forwards;
+.rz-copy-slide {
+  animation: rz-copy-slide 0.62s cubic-bezier(0.32, 0, 0.18, 1) forwards;
 }
 
-.nmc-bus-drop {
-  animation: nmc-bus-drop 0.64s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+.rz-bus-drop {
+  animation: rz-bus-drop 0.64s cubic-bezier(0.35, 0, 0.25, 1) forwards;
 }
 
-.nmc-bus-drop-reg-r {
-  animation: nmc-bus-drop-reg-r 0.64s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+.rz-bus-drop-reg-r {
+  animation: rz-bus-drop-reg-r 0.64s cubic-bezier(0.35, 0, 0.25, 1) forwards;
 }
 
-.nmc-bus-drop-imm-r {
-  animation: nmc-bus-drop-imm-r 0.64s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+.rz-bus-drop-imm-r {
+  animation: rz-bus-drop-imm-r 0.64s cubic-bezier(0.35, 0, 0.25, 1) forwards;
 }
 
-.nmc-wb-rise {
-  animation: nmc-wb-rise 0.52s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+.rz-wb-rise {
+  animation: rz-wb-rise 0.52s cubic-bezier(0.35, 0, 0.25, 1) forwards;
 }
 
-.nmc-jump-rise {
-  animation: nmc-jump-rise 0.52s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+.rz-jump-rise {
+  animation: rz-jump-rise 0.52s cubic-bezier(0.35, 0, 0.25, 1) forwards;
 }
 
 /* CodeMirror 6 暗色主题微调 */

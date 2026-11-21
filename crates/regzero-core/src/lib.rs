@@ -1,4 +1,4 @@
-//! Neo Magic Compiler 的领域层。
+//! RegZero（零号寄存器）领域层。
 //!
 //! 承载游戏核心逻辑：关卡与 Wiki 加载、运行器、判定器、DAG 进度存档、共享 DTO 与自检。
 //! 不依赖任何桌面壳或浏览器运行时，同时编译到原生与 `wasm32-unknown-unknown`。

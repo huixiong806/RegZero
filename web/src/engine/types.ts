@@ -1,5 +1,5 @@
 /**
- * 前后端共享契约类型（camelCase），与 `crates/neomagic-core/src/dto.rs` 严格对齐。
+ * 前后端共享契约类型（camelCase），与 `crates/regzero-core/src/dto.rs` 严格对齐。
  */
 
 export type Language = 'asm' | 'c';

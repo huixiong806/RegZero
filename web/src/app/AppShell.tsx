@@ -132,7 +132,10 @@ export function AppShell() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500 text-slate-950">
                   <Cpu className="h-4 w-4" />
                 </span>
-                <span>Neo Magic Compiler</span>
+                <span className="font-mono tracking-tight">RegZero</span>
+                <span className="hidden text-[11px] font-medium text-slate-400 sm:inline">
+                  零号寄存器
+                </span>
               </Link>
 
               <nav className="flex items-center gap-1">

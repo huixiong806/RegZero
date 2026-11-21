@@ -10,8 +10,8 @@ import {
 import type { SourceOperand } from './model';
 import type { CpuPulseEvent, PulseSource } from './pulseModel';
 
-export const OPERAND_DRAG_MIME = 'application/x-nmc-operand';
-export const ALU_RESULT_DRAG_MIME = 'application/x-nmc-alu-result';
+export const OPERAND_DRAG_MIME = 'application/x-rz-operand';
+export const ALU_RESULT_DRAG_MIME = 'application/x-rz-alu-result';
 
 export type ActiveSlot = 'left' | 'right' | 'dest' | 'copySrc';
 
@@ -248,7 +248,7 @@ export function AluDesk({
             key={inExecute ? `exec-${pulseKey}` : 'exec-idle'}
             viewBox="0 0 320 96"
             className={`h-[96px] w-full max-w-[320px] overflow-visible select-none ${
-              inExecute ? 'nmc-chip-charge' : ''
+              inExecute ? 'rz-chip-charge' : ''
             }`}
             aria-label="执行运算单元"
           >
@@ -258,7 +258,7 @@ export function AluDesk({
               stroke={leftActiveWire ? '#22d3ee' : '#334155'}
               strokeWidth={inExecute && pulse?.leftSource ? 3 : leftActiveWire ? 2 : 1.5}
               strokeDasharray={leftActiveWire && !inExecute ? undefined : '4 3'}
-              className={inExecute && pulse?.leftSource ? 'nmc-wire-flow' : undefined}
+              className={inExecute && pulse?.leftSource ? 'rz-wire-flow' : undefined}
             />
             <path
               d="M 244 0 L 244 12 L 212 20"
@@ -268,7 +268,7 @@ export function AluDesk({
               }
               strokeWidth={inExecute && pulse?.rightSource ? 3 : rightActiveWire ? 2 : 1.5}
               strokeDasharray={rightActiveWire && !inExecute ? undefined : '4 3'}
-              className={inExecute && pulse?.rightSource ? 'nmc-wire-flow' : undefined}
+              className={inExecute && pulse?.rightSource ? 'rz-wire-flow' : undefined}
             />
 
             <polygon
@@ -290,7 +290,7 @@ export function AluDesk({
               stroke={passedExecute && !isFlowPulse ? '#34d399' : '#334155'}
               strokeWidth={passedExecute && !isFlowPulse ? 2.5 : 1.5}
               strokeDasharray={passedExecute && !isFlowPulse ? undefined : '4 3'}
-              className={(inExecute || inMemory) && !isFlowPulse ? 'nmc-wire-flow' : undefined}
+              className={(inExecute || inMemory) && !isFlowPulse ? 'rz-wire-flow' : undefined}
             />
 
             {/* 执行前半段：左/右操作数胶囊沿铜线无缝滑入中央运算符 */}
@@ -408,7 +408,7 @@ export function AluDesk({
                 style={inExecute ? { animationDelay: inDur } : undefined}
                 className={`flex h-6 min-w-[26px] items-center justify-center rounded-full px-2 font-mono text-xs font-bold select-none ${
                   inExecute
-                    ? 'nmc-pop-new bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.65)]'
+                    ? 'rz-pop-new bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.65)]'
                     : 'bg-slate-800 text-slate-300'
                 }`}
               >
@@ -440,7 +440,7 @@ export function AluDesk({
           {isFlowPulse && pulse && ord >= 3 && (
             <div
               key={`flow-${pulseKey}`}
-              className={`nmc-pop-new absolute bottom-0.5 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow ${
+              className={`rz-pop-new absolute bottom-0.5 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow ${
                 pulse.branchTaken &&
                 pulse.nextLine !== undefined &&
                 pulse.line !== undefined &&
@@ -538,7 +538,7 @@ export function AluDesk({
                   ? 'border-emerald-400 bg-emerald-500/15 shadow-[0_0_14px_rgba(52,211,153,0.22)]'
                   : displayDest
                     ? inWriteback
-                      ? 'nmc-pop-new border-emerald-300 bg-emerald-500/20'
+                      ? 'rz-pop-new border-emerald-300 bg-emerald-500/20'
                       : 'border-emerald-500/55 bg-slate-900 hover:border-emerald-400'
                     : 'border-dashed border-slate-700 bg-slate-900/50 hover:border-emerald-500/60'
             }`}

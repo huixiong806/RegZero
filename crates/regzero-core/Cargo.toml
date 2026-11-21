@@ -1,8 +1,8 @@
 [package]
-name = "neomagic-core"
+name = "regzero-core"
 version = "0.1.0"
 edition = "2021"
-description = "Neo Magic Compiler 的领域层：关卡加载、运行器、判定器、存档"
+description = "RegZero（零号寄存器）领域层：关卡加载、运行器、判定器、存档"
 build = "build.rs"
 
 [features]
@@ -10,7 +10,7 @@ build = "build.rs"
 # 清单由 build.rs 生成（见 build.rs），所以不需要额外的依赖。
 #
 # ⚠ **默认打开**，原因很实在：如果它默认关闭，那么单独跑
-# `cargo test -p neomagic-core` 时嵌入清单是空的，守卫测试
+# `cargo test -p regzero-core` 时嵌入清单是空的，守卫测试
 # `embedded_content_matches_the_repository` 就会"无内容可比"而静默通过；
 # 只有跑 `cargo test --workspace`（桌面壳会打开这个特性）才会真的比一遍。
 # 于是"这个测试到底有没有在跑"变成了取决于你怎么调 cargo —— 太容易自欺。

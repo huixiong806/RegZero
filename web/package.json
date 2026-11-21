@@ -1,5 +1,5 @@
 {
-  "name": "neomagic-compiler-web",
+  "name": "regzero-web",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings=0",
     "test": "vitest run",
-    "wasm:build": "wasm-pack build ../crates/nmc-wasm --target web --out-dir ../../web/src/wasm-pkg"
+    "wasm:build": "rm -rf src/wasm-pkg && wasm-pack build ../crates/regzero-wasm --target web --out-dir ../../web/src/wasm-pkg"
   },
   "dependencies": {
     "@codemirror/language": "^6.11.0",

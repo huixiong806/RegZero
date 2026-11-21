@@ -15,7 +15,7 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    // crates/neomagic-core → 仓库根
+    // crates/regzero-core → 仓库根
     let repo_root = manifest_dir.parent().and_then(|p| p.parent()).unwrap().to_path_buf();
     let content = repo_root.join("content");
 

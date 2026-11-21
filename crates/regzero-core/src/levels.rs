@@ -331,7 +331,7 @@ impl LevelStore {
     pub fn embedded() -> Self {
         assert!(
             cfg!(feature = "embedded-content"),
-            "LevelStore::embedded() 需要 neomagic-core 的 embedded-content 特性"
+            "LevelStore::embedded() 需要 regzero-core 的 embedded-content 特性"
         );
         Self { content: Content::Embedded }
     }
