@@ -22,12 +22,32 @@
   }
 }
 
+@keyframes nmc-pulse-anchor {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.85);
+    border-color: rgba(34, 211, 238, 0.95);
+    background-color: rgba(34, 211, 238, 0.25);
+  }
+  65% {
+    box-shadow: 0 0 0 10px rgba(34, 211, 238, 0);
+    border-color: rgba(34, 211, 238, 0.8);
+    background-color: rgba(34, 211, 238, 0.14);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+  }
+}
+
 .nmc-flash-write {
   animation: nmc-flash-write 0.85s ease-out;
 }
 
 .nmc-flash-warn {
   animation: nmc-flash-warn 0.9s ease-out;
+}
+
+.nmc-pulse-anchor {
+  animation: nmc-pulse-anchor 0.85s ease-out;
 }
 
 /* CodeMirror 6 暗色主题微调 */

@@ -1,0 +1,107 @@
+{
+  "topic": "rv32-arithmetic",
+  "title": "算术与搬运指令",
+  "order": 2,
+  "unlockAny": ["add", "addi", "sub", "mv", "mul", "div", "rem"],
+  "summary": "所有三操作数算术指令都遵循**「结果放最左，输入在右侧」**的统一格式。",
+  "sections": [
+    {
+      "id": "arith-table",
+      "heading": "已解锁的指令",
+      "unlockAny": ["add", "addi", "sub", "mv", "mul", "div", "rem"],
+      "kind": "table",
+      "columns": [
+        { "id": "op", "label": "指令", "unlockAny": [] },
+        { "id": "syntax", "label": "写法", "unlockAny": [] },
+        { "id": "meaning", "label": "含义", "unlockAny": [] },
+        { "id": "example", "label": "示例", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "add",
+          "unlockAny": ["add"],
+          "cells": {
+            "op": "`add`",
+            "syntax": "`add 目标, 左, 右`",
+            "meaning": "把两个寄存器的值相加并写入目标",
+            "example": "`add t2, t0, t1`"
+          }
+        },
+        {
+          "id": "addi",
+          "unlockAny": ["addi"],
+          "cells": {
+            "op": "`addi`",
+            "syntax": "`addi 目标, 源, 常量`",
+            "meaning": "寄存器加上一个整数常量（`-2048..2047`）",
+            "example": "`addi t1, t0, 7`"
+          }
+        },
+        {
+          "id": "sub",
+          "unlockAny": ["sub"],
+          "cells": {
+            "op": "`sub`",
+            "syntax": "`sub 目标, 左, 右`",
+            "meaning": "`目标 = 左 - 右`（左右顺序敏感）",
+            "example": "`sub t2, t0, t1`"
+          }
+        },
+        {
+          "id": "mv",
+          "unlockAny": ["mv"],
+          "cells": {
+            "op": "`mv`",
+            "syntax": "`mv 目标, 源`",
+            "meaning": "把源寄存器的值复制一份到目标（等价于 `addi 目标, 源, 0`）",
+            "example": "`mv t3, t0`"
+          }
+        },
+        {
+          "id": "mul",
+          "unlockAny": ["mul"],
+          "cells": {
+            "op": "`mul`",
+            "syntax": "`mul 目标, 左, 右`",
+            "meaning": "整数相乘（保留低 32 位）",
+            "example": "`mul t4, t2, t1`"
+          }
+        },
+        {
+          "id": "div",
+          "unlockAny": ["div"],
+          "cells": {
+            "op": "`div`",
+            "syntax": "`div 目标, 左, 右`",
+            "meaning": "整数除法，向零截断（如 `-17 / 5 = -3`）",
+            "example": "`div t2, t0, t1`"
+          }
+        },
+        {
+          "id": "rem",
+          "unlockAny": ["rem"],
+          "cells": {
+            "op": "`rem`",
+            "syntax": "`rem 目标, 左, 右`",
+            "meaning": "取余数，余数符号跟随被除数",
+            "example": "`rem t3, t0, t1`"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tip-const",
+      "heading": "用 zero 构造常量",
+      "unlockAny": ["addi", "zero"],
+      "kind": "markdown",
+      "markdown": "利用恒为 0 的 `zero` 寄存器，可以直接把一个小整数装进寄存器：\n\n```asm\naddi t1, zero, 42   # t1 = 0 + 42 = 42\n```"
+    },
+    {
+      "id": "tip-neg-clear",
+      "heading": "清零与取相反数",
+      "unlockAny": ["sub", "mv"],
+      "kind": "markdown",
+      "markdown": "- 寄存器清零：`mv t1, zero`（或 `addi t1, zero, 0`）\n- 取相反数：`sub t1, zero, t0`（计算 `0 - t0`）"
+    }
+  ]
+}

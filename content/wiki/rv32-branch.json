@@ -1,0 +1,81 @@
+{
+  "topic": "rv32-branch",
+  "title": "分支、标签与循环",
+  "order": 3,
+  "unlockAny": ["pc", "blt", "bge", "j", "loop"],
+  "summary": "CPU 通过 **PC（程序计数器）** 记录下一条要执行的指令。默认顺序往下走；配合**标签**与**跳转指令**就能实现条件分支和循环。",
+  "sections": [
+    {
+      "id": "branch-table",
+      "heading": "已解锁的跳转指令",
+      "unlockAny": ["blt", "bge", "j", "beq", "bne", "multi-branch"],
+      "kind": "table",
+      "columns": [
+        { "id": "op", "label": "指令", "unlockAny": [] },
+        { "id": "syntax", "label": "写法", "unlockAny": [] },
+        { "id": "meaning", "label": "何时跳转", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "blt",
+          "unlockAny": ["blt"],
+          "cells": {
+            "op": "`blt`",
+            "syntax": "`blt 左, 右, 标签`",
+            "meaning": "当 `左 < 右`（有符号比较）成立时跳到 `标签`"
+          }
+        },
+        {
+          "id": "bge",
+          "unlockAny": ["bge"],
+          "cells": {
+            "op": "`bge`",
+            "syntax": "`bge 左, 右, 标签`",
+            "meaning": "当 `左 >= 右`（有符号比较）成立时跳到 `标签`"
+          }
+        },
+        {
+          "id": "beq",
+          "unlockAny": ["beq", "multi-branch"],
+          "cells": {
+            "op": "`beq`",
+            "syntax": "`beq 左, 右, 标签`",
+            "meaning": "当 `左 == 右` 成立时跳到 `标签`"
+          }
+        },
+        {
+          "id": "bne",
+          "unlockAny": ["bne", "multi-branch"],
+          "cells": {
+            "op": "`bne`",
+            "syntax": "`bne 左, 右, 标签`",
+            "meaning": "当 `左 != 右` 成立时跳到 `标签`"
+          }
+        },
+        {
+          "id": "j",
+          "unlockAny": ["j"],
+          "cells": {
+            "op": "`j`",
+            "syntax": "`j 标签`",
+            "meaning": "无条件直接跳转到 `标签`"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pattern-if-else",
+      "heading": "模式 1：二选一分支（if / else）",
+      "unlockAny": ["blt", "bge"],
+      "kind": "markdown",
+      "markdown": "```asm\n    blt t0, t1, else_branch\n    # 条件不成立时走这里\n    j   done          # 别忘了跳过 else 块！\nelse_branch:\n    # 条件成立时走这里\ndone:\n```"
+    },
+    {
+      "id": "pattern-while",
+      "heading": "模式 2：前置判断循环（while）",
+      "unlockAny": ["loop", "backward-jump"],
+      "kind": "markdown",
+      "markdown": "```asm\nloop:\n    blt t0, t2, done  # 不满足继续条件时先跳出（0 次也能安全跳过）\n    # 循环体\n    j   loop          # 往回跳 = 循环！\ndone:\n```"
+    }
+  ]
+}

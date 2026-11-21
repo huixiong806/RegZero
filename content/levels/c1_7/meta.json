@@ -13,6 +13,20 @@
     "before": "t0 中是一个非负整数 n",
     "after": "计算 1 + 2 + ... + n，存入 t1（n = 0 时 t1 = 0）"
   },
+  "briefing": [
+    {
+      "tag": "核心发现",
+      "text": "上一关你用跳转「往前跳」来跳过分支——那如果让跳转指令**往回跳**呢？"
+    },
+    {
+      "tag": "循环诞生",
+      "text": "往回跳，就是**循环**！配一个计数器和一个累加器，几行指令就能把重复动作执行任意多次。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "计算 `1 + 2 + … + n`（`n` 在 `t0` 中），将总和存入 `t1`。别忘了考虑 `n = 0` 的边界情况！"
+    }
+  ],
   "sandbox": {
     "type": "manual-cpu",
     "modules": ["regs", "pcTrack"],
@@ -59,8 +73,7 @@
   },
   "editor": {
     "readonlyPrefix": 1,
-    "readonlySuffix": 1,
-    "suggested": { "2": "addi t1, zero, 0" }
+    "readonlySuffix": 1
   },
   "hints": [
     { "level": 1, "type": "diagram", "content": "CPU 没有专门的 while/for 指令：只要在循环顶部放一个 loop: 标签，循环末尾写 j loop 往回跳，并在顶部用 blt t0, t2, done 检查是否超过 n。" },

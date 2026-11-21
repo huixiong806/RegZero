@@ -2,6 +2,7 @@ import type { SubmitDto, UserProgress } from './types';
 
 const PROGRESS_KEY = 'nmc.progress.v1';
 const DRAFT_PREFIX = 'nmc.draft.v1.';
+const BRIEFING_KEY = 'nmc.briefing.v1';
 
 export function defaultProgress(): UserProgress {
   return {
@@ -100,4 +101,52 @@ export function clearDraft(key: string): void {
   } catch {
     // 忽略
   }
+}
+
+/** 判断某关的首次进场引导是否已经看过。 */
+export function hasSeenBriefing(levelId: string): boolean {
+  try {
+    const raw = window.localStorage.getItem(BRIEFING_KEY);
+    if (!raw) return false;
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.includes(levelId);
+  } catch {
+    return false;
+  }
+}
+
+/** 标记某关的首次进场引导已阅读。 */
+export function markBriefingSeen(levelId: string): void {
+  try {
+    const raw = window.localStorage.getItem(BRIEFING_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    const list = Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string')
+      : [];
+    if (!list.includes(levelId)) {
+      list.push(levelId);
+      window.localStorage.setItem(BRIEFING_KEY, JSON.stringify(list));
+    }
+  } catch {
+    // 忽略存储异常
+  }
+}
+
+/** 清空本地通关进度、引导已读状态与全部代码草稿（用于全新体验或重置存档）。 */
+export function resetAllProgress(): UserProgress {
+  try {
+    window.localStorage.removeItem(PROGRESS_KEY);
+    window.localStorage.removeItem(BRIEFING_KEY);
+    const toRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(DRAFT_PREFIX)) toRemove.push(k);
+    }
+    for (const k of toRemove) {
+      window.localStorage.removeItem(k);
+    }
+  } catch {
+    // 忽略存储异常
+  }
+  return defaultProgress();
 }

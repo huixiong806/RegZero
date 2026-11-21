@@ -76,3 +76,14 @@ export function formatHex32(val: number): string {
 export function formatRegValue(val: number, radix: 'dec' | 'hex'): string {
   return radix === 'hex' ? formatHex32(val) : String(toSigned32(val));
 }
+
+/**
+ * 将判题 Diff 中的硬件寄存器编号（如 `寄存器 x7`）按渐进披露开关转为对新手友好的 ABI 名称（如 `寄存器 t2`）。
+ */
+export function formatDiffSubject(what: string, showRegXName: boolean): string {
+  if (showRegXName) return what;
+  return what.replace(/\bx(3[01]|[12]?[0-9])\b/g, (match) => {
+    const info = BY_KEY.get(match);
+    return info ? info.abi : match;
+  });
+}

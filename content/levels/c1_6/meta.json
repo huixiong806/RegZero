@@ -13,6 +13,20 @@
     "before": "t0 与 t1 中存有两个整数",
     "after": "将 t0 与 t1 中的较大值存入 t2"
   },
+  "briefing": [
+    {
+      "tag": "新概念",
+      "text": "CPU 靠 **PC（程序计数器）** 决定下一条执行哪一行指令，默认总是从上往下顺序执行。"
+    },
+    {
+      "tag": "学会拐弯",
+      "text": "给代码贴上**标签**（如 `use_t1:`），再配合条件跳转 `blt` / `bge` 与无条件跳转 `j`，就能像 `if / else` 一样拐弯！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "比较 `t0` 与 `t1`，把其中**较大**的数存入 `t2`。"
+    }
+  ],
   "sandbox": {
     "type": "manual-cpu",
     "modules": ["regs", "pcTrack"],
@@ -56,8 +70,7 @@
   },
   "editor": {
     "readonlyPrefix": 1,
-    "readonlySuffix": 1,
-    "suggested": { "2": "blt t0, t1, use_t1" }
+    "readonlySuffix": 1
   },
   "hints": [
     { "level": 1, "type": "diagram", "content": "先判断 t0 < t1 时跳去执行 mv t2, t1；否则顺序执行 mv t2, t0 后，一定要用 j done 跳过 use_t1 分支。" },

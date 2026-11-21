@@ -1,5 +1,6 @@
-import { BookOpen, Lightbulb, X } from 'lucide-react';
+import { BookOpen, Lightbulb, PlayCircle, X } from 'lucide-react';
 import type { HintItem } from '../../engine/types';
+import { t } from '../../i18n';
 import { HintDrawer } from './HintDrawer';
 import { SimpleMarkdown } from './SimpleMarkdown';
 
@@ -11,6 +12,9 @@ interface InfoDrawerProps {
   lessonMarkdown: string;
   hints: HintItem[];
   wikiRefs: string[];
+  wikiTitles?: Record<string, string>;
+  canReplayBriefing?: boolean;
+  onReplayBriefing?: () => void;
   onSwitchMode: (mode: 'lesson' | 'hints') => void;
   onOpenWiki: (topic: string) => void;
   onClose: () => void;
@@ -24,6 +28,9 @@ export function InfoDrawer({
   lessonMarkdown,
   hints,
   wikiRefs,
+  wikiTitles = {},
+  canReplayBriefing = false,
+  onReplayBriefing,
   onSwitchMode,
   onOpenWiki,
   onClose,
@@ -69,9 +76,20 @@ export function InfoDrawer({
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-xs">
-            <div className="font-bold text-white">{title}</div>
-            <div className="mt-1.5 text-slate-400">初始：{beforeText}</div>
-            <div className="mt-0.5 text-cyan-300">目标：{afterText}</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold text-white">{title}</div>
+              {canReplayBriefing && onReplayBriefing && (
+                <button
+                  type="button"
+                  onClick={onReplayBriefing}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-medium text-cyan-300 transition hover:bg-cyan-500/20"
+                >
+                  <PlayCircle className="h-3 w-3" /> {t('briefing.replay')}
+                </button>
+              )}
+            </div>
+            <div className="mt-1.5 text-slate-400">{t('drawer.beforePrefix')}{beforeText}</div>
+            <div className="mt-0.5 text-cyan-300">{t('drawer.afterPrefix')}{afterText}</div>
           </div>
 
           {mode === 'lesson' ? (
@@ -84,9 +102,9 @@ export function InfoDrawer({
                       key={topic}
                       type="button"
                       onClick={() => onOpenWiki(topic)}
-                      className="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1 font-mono text-[11px] text-cyan-300 hover:bg-slate-800"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-cyan-300 hover:bg-slate-800"
                     >
-                      📚 {topic}
+                      <BookOpen className="h-3 w-3" /> {wikiTitles[topic] ?? topic}
                     </button>
                   ))}
                 </div>

@@ -3,6 +3,7 @@ import type { ManualCpuSandboxConfig } from '../../engine/types';
 import {
   applyAluOperation,
   applyDirectCopy,
+  collectUsedSyntaxPatterns,
   createManualCpuState,
   undoManualCpu,
 } from './model';
@@ -27,6 +28,11 @@ describe('sandboxes/manual-cpu/model', () => {
     expect(s.regs.t2).toBe(8);
     expect(s.completed).toBe(true);
     expect(s.recordings[0]?.asm).toBe('add t2, t0, t1');
+    expect(s.recordings[0]?.summary).toContain('存入 t2(8)');
+    const patterns = collectUsedSyntaxPatterns(s.recordings);
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]?.op).toBe('add');
+    expect(patterns[0]?.slots[0]).toEqual({ label: '存入', role: 'dest' });
   });
 
   it('warns when overwriting unbacked value in swap puzzle and supports undo', () => {

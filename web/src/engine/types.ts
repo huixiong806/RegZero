@@ -11,6 +11,11 @@ export interface GoalSummary {
   after: string;
 }
 
+export interface BriefingSlide {
+  tag?: string;
+  text: string;
+}
+
 export interface HintItem {
   level: number;
   type: 'diagram' | 'steps' | 'snippet' | string;
@@ -132,6 +137,7 @@ export interface LevelMeta {
   parInstructions?: number;
   concepts: string[];
   goalSummary: GoalSummary;
+  briefing?: BriefingSlide[];
   sandbox: SandboxConfig;
   editor: EditorConfig;
   hints: HintItem[];
@@ -242,10 +248,42 @@ export interface SubmitDto {
   generatedAssembly?: string;
 }
 
+export interface WikiTableColumn {
+  id: string;
+  label: string;
+  unlockAny: string[];
+}
+
+export interface WikiTableRow {
+  id: string;
+  unlockAny: string[];
+  cells: Record<string, string>;
+}
+
+export type WikiSection =
+  | {
+      id: string;
+      heading?: string;
+      unlockAny: string[];
+      kind: 'markdown';
+      markdown: string;
+    }
+  | {
+      id: string;
+      heading?: string;
+      unlockAny: string[];
+      kind: 'table';
+      columns: WikiTableColumn[];
+      rows: WikiTableRow[];
+    };
+
 export interface WikiEntry {
   topic: string;
   title: string;
-  markdown: string;
+  order: number;
+  unlockAny: string[];
+  summary?: string;
+  sections: WikiSection[];
 }
 
 export interface LevelProgressRecord {

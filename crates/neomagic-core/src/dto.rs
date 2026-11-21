@@ -180,13 +180,67 @@ pub struct SubmitDto {
     pub generated_assembly: Option<String>,
 }
 
-/// Wiki 概念词条。
-#[derive(Serialize, Deserialize, Clone, Debug)]
+/// 结构化概念图鉴词条（支持按知识点渐进披露词条、段落、表格列与表格行）。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WikiEntry {
     pub topic: String,
     pub title: String,
-    pub markdown: String,
+    #[serde(default)]
+    pub order: u32,
+    /// 整篇词条可见所需的概念集合（任一满足即解锁；空数组表示常驻可见）。
+    #[serde(default)]
+    pub unlock_any: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
+    pub sections: Vec<WikiSection>,
+}
+
+/// 词条内的单个渐进分段（说明段或可逐行生长的速查表）。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WikiSection {
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heading: Option<String>,
+    /// 任一概念满足即显示本段；空数组表示随词条可见。
+    #[serde(default)]
+    pub unlock_any: Vec<String>,
+    #[serde(flatten)]
+    pub body: WikiSectionBody,
+}
+
+/// 词条分段内容体。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum WikiSectionBody {
+    Markdown {
+        markdown: String,
+    },
+    Table {
+        columns: Vec<WikiTableColumn>,
+        rows: Vec<WikiTableRow>,
+    },
+}
+
+/// 渐进速查表列定义（支持整列按概念解锁，例如隐藏 `x0-x31` 硬件编号列）。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WikiTableColumn {
+    pub id: String,
+    pub label: String,
+    #[serde(default)]
+    pub unlock_any: Vec<String>,
+}
+
+/// 渐进速查表行定义（支持逐关追加指令或寄存器行）。
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WikiTableRow {
+    pub id: String,
+    #[serde(default)]
+    pub unlock_any: Vec<String>,
+    pub cells: BTreeMap<String, String>,
 }
 
 /// 将领域层 `Verdict` 转换为标准 `SubmitDto`。

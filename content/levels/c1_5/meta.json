@@ -13,6 +13,16 @@
     "before": "t0 为物品总数，t1 为每箱容量（非零）",
     "after": "t2 = 整箱数（t0 / t1），t3 = 剩余零头（t0 % t1），t4 = 已装箱总数（t2 × t1）"
   },
+  "briefing": [
+    {
+      "tag": "新指令",
+      "text": "除了加减，CPU 还提供整数乘除与取余指令：`mul`（相乘）、`div`（整除，向零截断）和 `rem`（余数）。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "把 `t0` 件物品按每箱 `t1` 件装箱：整箱数存 `t2`，剩余零头存 `t3`，已装箱总数存 `t4`。"
+    }
+  ],
   "sandbox": {
     "type": "manual-cpu",
     "modules": ["regs", "alu"],
@@ -39,8 +49,7 @@
   },
   "editor": {
     "readonlyPrefix": 1,
-    "readonlySuffix": 1,
-    "suggested": { "2": "div t2, t0, t1" }
+    "readonlySuffix": 1
   },
   "hints": [
     { "level": 1, "type": "diagram", "content": "先用 div 算出商 t2，用 rem 算出余数 t3，最后把商 t2 乘回每箱容量 t1 放进 t4。" },

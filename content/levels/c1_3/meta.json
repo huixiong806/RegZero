@@ -13,6 +13,20 @@
     "before": "t0 = a，t1 = b（t3 为空闲暂存槽）",
     "after": "计算 t2 = a - b，并且交换 t0 与 t1 的值"
   },
+  "briefing": [
+    {
+      "tag": "核心特性",
+      "text": "往寄存器里写入新数值时，原来的旧值会立刻消失——这叫做**覆盖写**。"
+    },
+    {
+      "tag": "本关陷阱",
+      "text": "如果直接把 `t1` 复制进 `t0`，`t0` 原来的数就丢了！用空闲的 `t3` 当**暂存槽**先备份，就能安全完成交换。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "算出 `t2 = t0 - t1`，并把 `t0` 和 `t1` 的值互相交换。"
+    }
+  ],
   "sandbox": {
     "type": "manual-cpu",
     "modules": ["regs", "alu"],
@@ -39,8 +53,7 @@
   },
   "editor": {
     "readonlyPrefix": 1,
-    "readonlySuffix": 1,
-    "suggested": { "2": "sub t2, t0, t1" }
+    "readonlySuffix": 1
   },
   "hints": [
     { "level": 1, "type": "diagram", "content": "先算完 t2 = t0 - t1 再做交换，否则换完之后再减符号会反。" },

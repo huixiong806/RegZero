@@ -6,29 +6,14 @@ import { defaultEngineClient } from '../engine/OnlineWasmClient';
 import type {
   Language,
   LevelPayload,
-  LevelSummary,
   PlaygroundWorkMode,
 } from '../engine/types';
 
 export function PlaygroundPage() {
-  const { progress, refreshProgress } = useAppContext();
+  const { levels, refreshProgress } = useAppContext();
   const [workMode, setWorkMode] = useState<PlaygroundWorkMode>('online');
   const [contextKey, setContextKey] = useState<string>('sandbox:asm');
-  const [levels, setLevels] = useState<LevelSummary[]>([]);
   const [activeLevel, setActiveLevel] = useState<LevelPayload | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    defaultEngineClient
-      .listLevels(progress)
-      .then((list) => {
-        if (active) setLevels(list);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [progress]);
 
   useEffect(() => {
     if (contextKey.startsWith('sandbox:')) {

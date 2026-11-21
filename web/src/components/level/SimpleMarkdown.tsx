@@ -5,7 +5,7 @@ interface SimpleMarkdownProps {
 }
 
 /** 行内格式渲染（粗体 + 行内代码），零外部重型依赖。 */
-function renderInline(text: string): ReactNode[] {
+export function renderInline(text: string): ReactNode[] {
   const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
   return tokens.map((part, i) => {
     if (part.startsWith('`') && part.endsWith('`')) {

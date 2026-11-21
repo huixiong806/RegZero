@@ -102,23 +102,14 @@ impl EngineCore {
         })
     }
 
-    /// 列出全部 Wiki 词条。
-    pub fn list_wiki(&self) -> Vec<WikiEntry> {
-        self.store
-            .wiki_topics()
-            .into_iter()
-            .filter_map(|topic| self.load_wiki(&topic).ok())
-            .collect()
+    /// 按顺序列出全部结构化 Wiki 词条。
+    pub fn list_wiki(&self) -> Result<Vec<WikiEntry>, String> {
+        self.store.list_wiki()
     }
 
-    /// 读取单篇 Wiki 词条。
+    /// 读取单篇结构化 Wiki 词条。
     pub fn load_wiki(&self, topic: &str) -> Result<WikiEntry, String> {
-        let md = self
-            .store
-            .load_wiki(topic)
-            .ok_or_else(|| format!("找不到概念图鉴词条：{}", topic))?;
-        let title = extract_h1(&md).unwrap_or_else(|| topic.to_string());
-        Ok(WikiEntry { topic: topic.to_string(), title, markdown: md })
+        self.store.load_wiki(topic)
     }
 
     /// 运行某关卡的指定测例（不计分，不修改存档）。
@@ -341,7 +332,7 @@ impl WasmEngine {
     }
 
     pub fn list_wiki(&self) -> Result<String, JsValue> {
-        to_json(Ok(self.core.list_wiki()))
+        to_json(self.core.list_wiki())
     }
 
     pub fn load_wiki(&self, topic: &str) -> Result<String, JsValue> {
@@ -510,11 +501,6 @@ fn parse_addr(s: &str) -> Result<u32, std::num::ParseIntError> {
     }
 }
 
-fn extract_h1(md: &str) -> Option<String> {
-    md.lines()
-        .find_map(|line| line.trim().strip_prefix("# ").map(|s| s.trim().to_string()))
-}
-
 fn make_snapshot(sim: &Simulator, runner: &Runner, watch_addrs: &[u32]) -> MachineSnapshot {
     let pc = sim.get_pc();
     let tick = sim.get_tick();
@@ -598,9 +584,11 @@ mod tests {
     #[test]
     fn wiki_entries_are_embedded_and_readable() {
         let engine = EngineCore::new();
-        let list = engine.list_wiki();
+        let list = engine.list_wiki().unwrap();
         assert!(list.len() >= 3);
+        assert_eq!(list[0].topic, "rv32-registers");
         let reg = engine.load_wiki("rv32-registers").unwrap();
         assert!(reg.title.contains("寄存器"));
+        assert!(!reg.sections.is_empty());
     }
 }

@@ -8,6 +8,8 @@ interface GoalCardProps {
   justPassed: boolean;
   nextMain?: LevelSummary;
   nextSide?: LevelSummary;
+  lessonBtnRef?: React.RefObject<HTMLButtonElement | null>;
+  pulseLessonBtn?: boolean;
   onOpenLesson: () => void;
   onOpenHints: () => void;
   onOpenWiki: (topic: string) => void;
@@ -29,6 +31,8 @@ export function GoalCard({
   justPassed,
   nextMain,
   nextSide,
+  lessonBtnRef,
+  pulseLessonBtn = false,
   onOpenLesson,
   onOpenHints,
   onOpenWiki,
@@ -67,19 +71,15 @@ export function GoalCard({
         )}
       </div>
 
-      {/* 中：极简目标摘要（图形箭头） */}
-      <div className="hidden items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-1 text-xs xl:flex">
-        <span className="max-w-[240px] truncate text-slate-400">{meta.goalSummary.before}</span>
-        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-        <span className="max-w-[280px] truncate font-medium text-cyan-200">{meta.goalSummary.after}</span>
-      </div>
-
       {/* 右：按需展开按钮 + 通关快捷下一关 */}
       <div className="flex flex-wrap items-center gap-1.5">
         <button
+          ref={lessonBtnRef}
           type="button"
           onClick={onOpenLesson}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200"
+          className={`inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-cyan-500/50 hover:text-cyan-200 ${
+            pulseLessonBtn ? 'nmc-pulse-anchor' : ''
+          }`}
         >
           <BookOpen className="h-3.5 w-3.5 text-cyan-400" /> 规则
         </button>

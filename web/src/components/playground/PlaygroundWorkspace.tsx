@@ -10,6 +10,8 @@ import {
   Terminal,
   X,
 } from 'lucide-react';
+import { joinHiddenSuffix, splitHiddenReadonlySuffix } from '../../domain/editorConstraints';
+import { FULL_UI_DISCLOSURE, type UiDisclosure } from '../../domain/knowledge';
 import type { EngineClient } from '../../engine/EngineClient';
 import { defaultEngineClient } from '../../engine/OnlineWasmClient';
 import {
@@ -35,6 +37,9 @@ export interface PlaygroundWorkspaceProps {
   initialSandboxCode?: string;
   engine?: EngineClient;
   editorRef?: React.RefObject<CodeEditorHandle | null>;
+  disclosure?: UiDisclosure;
+  guideHint?: string | null;
+  onUserEdit?: () => void;
   onSubmitted?: (result: SubmitDto) => void;
 }
 
@@ -59,6 +64,9 @@ export function PlaygroundWorkspace({
   initialSandboxCode,
   engine = defaultEngineClient,
   editorRef,
+  disclosure = FULL_UI_DISCLOSURE,
+  guideHint,
+  onUserEdit,
   onSubmitted,
 }: PlaygroundWorkspaceProps) {
   const internalEditorRef = useRef<CodeEditorHandle | null>(null);
@@ -96,9 +104,18 @@ export function PlaygroundWorkspace({
     void engine.debugQuit();
   }, [draftKey, defaultCode, engine]);
 
-  const handleCodeChange = (next: string) => {
-    setCode(next);
-    saveDraft(draftKey, next);
+  const hideSuffix = Boolean(level && language === 'asm' && !disclosure.showEcallSuffix);
+  const { visibleCode, hiddenSuffix, visibleReadonlySuffix } = splitHiddenReadonlySuffix(
+    code,
+    level?.editor.readonlySuffix ?? 0,
+    hideSuffix,
+  );
+
+  const handleVisibleCodeChange = (nextVisible: string) => {
+    const nextFull = joinHiddenSuffix(nextVisible, hiddenSuffix);
+    setCode(nextFull);
+    saveDraft(draftKey, nextFull);
+    onUserEdit?.();
   };
 
   const handleResetCode = () => {
@@ -206,11 +223,24 @@ export function PlaygroundWorkspace({
     if (!level) return;
     setBusy(true);
     setErrorMsg(null);
+    setDebugging(false);
     try {
       const res = await engine.submitCode(level.id, code);
       setSubmitResult(res);
       recordSubmissionProgress(res);
       onSubmitted?.(res);
+
+      // 无编译错误时同步展示首个测例（或首个失败测例）的寄存器结果，让单按钮体验完整闭环
+      if (res.errors.length === 0) {
+        const previewIdx = res.tests.find((t) => !t.passed)?.failure?.caseIndex ?? 0;
+        const snap = await engine.runCode(level.id, code, previewIdx).catch(() => null);
+        if (snap) {
+          setSnapshot(snap);
+          setChangedRegs({});
+          setChangedMem({});
+          setInspectedMem({});
+        }
+      }
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : String(err));
     } finally {
@@ -220,35 +250,42 @@ export function PlaygroundWorkspace({
 
   const focusRegs =
     level && level.meta.sandbox.type === 'manual-cpu' ? level.meta.sandbox.focusRegs : undefined;
+  const regRoles =
+    level && level.meta.sandbox.type === 'manual-cpu' ? level.meta.sandbox.regRoles : undefined;
   const errorLines = submitResult ? submitResult.errors.map((e) => e.line).filter((n) => n > 0) : [];
   const mergedMemory = { ...(snapshot?.memoryWords ?? {}), ...inspectedMem };
-  const showMemory = !level || Object.keys(mergedMemory).length > 0;
+  const showMemory = disclosure.showMemoryPanel && (!level || Object.keys(mergedMemory).length > 0);
+  const showRegsPanel = !level || snapshot !== null;
+  const showAdvancedControls = !level || disclosure.showDebugControls;
 
   return (
     <div className="flex h-full flex-col gap-3">
-      {/* 编辑器 + 单行紧凑工具栏 */}
+      {/* 编辑器 + 主次分明工具栏 */}
       <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/90 px-3 py-2">
-          {/* 左：指令芯片胶囊 + 测例选择 */}
+          {/* 左：可用指令提示 + （解锁后）测例选择 */}
           <div className="flex flex-wrap items-center gap-1.5">
             {level && level.availableOps.length > 0 ? (
-              level.availableOps
-                .filter((op) => op !== 'ecall')
-                .map((op) => (
-                  <span
-                    key={op}
-                    className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-cyan-300"
-                  >
-                    {op}
-                  </span>
-                ))
+              <>
+                <span className="text-[11px] text-slate-500">可用指令</span>
+                {level.availableOps
+                  .filter((op) => op !== 'ecall')
+                  .map((op) => (
+                    <span
+                      key={op}
+                      className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-cyan-300"
+                    >
+                      {op}
+                    </span>
+                  ))}
+              </>
             ) : (
               <span className="rounded-md bg-cyan-500/15 px-2 py-0.5 font-mono text-[11px] font-bold text-cyan-300">
-                {language === 'asm' ? 'RV32IM' : 'C'}
+                {language === 'asm' ? 'RV32IM 汇编' : 'C 语言'}
               </span>
             )}
 
-            {level && level.testsPreview.length > 0 && (
+            {level && showAdvancedControls && level.testsPreview.length > 0 && (
               <select
                 aria-label="测例选择"
                 value={caseIndex}
@@ -257,57 +294,69 @@ export function PlaygroundWorkspace({
               >
                 {level.testsPreview.map((tc) => (
                   <option key={tc.index} value={tc.index}>
-                    #{tc.index + 1} {tc.name}
+                    测例 {tc.index + 1} · {tc.name}
                   </option>
                 ))}
               </select>
             )}
           </div>
 
-          {/* 右：核心操作按钮 */}
+          {/* 右：单一主视觉按钮 + 渐进开放的次级调试按钮 */}
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleRun()}
-              title="运行"
-              className="inline-flex items-center gap-1 rounded-lg bg-sky-500 px-2.5 py-1 text-xs font-bold text-slate-950 hover:bg-sky-400 disabled:opacity-50"
-            >
-              <Play className="h-3.5 w-3.5" /> 运行
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleDebugStart()}
-              title="单步调试"
-              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition disabled:opacity-50 ${
-                debugging
-                  ? 'border-amber-400 bg-amber-400 text-slate-950'
-                  : 'border-amber-500/50 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
-              }`}
-            >
-              <Bug className="h-3.5 w-3.5" /> 调试
-            </button>
+            {showAdvancedControls && (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleRun()}
+                  title="仅运行当前选中测例"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/80 px-2.5 py-1 text-xs font-medium text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                >
+                  <Play className="h-3.5 w-3.5 text-sky-400" /> {level ? '试运行' : '运行'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleDebugStart()}
+                  title="逐条指令单步排查"
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
+                    debugging
+                      ? 'border-amber-400 bg-amber-400 font-bold text-slate-950'
+                      : 'border-slate-700 bg-slate-800/80 text-slate-200 hover:border-amber-500/50 hover:text-amber-200'
+                  }`}
+                >
+                  <Bug className="h-3.5 w-3.5 text-amber-400" /> 单步调试
+                </button>
+              </>
+            )}
             {level && (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void handleSubmit()}
-                className="inline-flex items-center gap-1 rounded-lg bg-emerald-400 px-3 py-1 text-xs font-bold text-slate-950 hover:bg-emerald-300 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-400 px-3 py-1 text-xs font-bold text-slate-950 shadow hover:bg-emerald-300 disabled:opacity-50"
               >
-                <CheckCircle2 className="h-3.5 w-3.5" /> 提交
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {showAdvancedControls ? '提交验证' : '运行并提交'}
               </button>
             )}
             <button
               type="button"
               onClick={handleResetCode}
               title="重置初始代码"
-              className="rounded-lg border border-slate-700 bg-slate-800 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
+              className="rounded-lg border border-slate-800 bg-slate-950 p-1.5 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
+
+        {/* 阶段过渡轻引导（点击「去编码 →」后出现） */}
+        {guideHint && (
+          <div className="border-b border-cyan-500/30 bg-cyan-950/30 px-3 py-1.5 text-xs text-cyan-200">
+            {guideHint}
+          </div>
+        )}
 
         {/* 调试时间轴条（仅调试模式展开） */}
         {debugging && (
@@ -333,7 +382,7 @@ export function PlaygroundWorkspace({
                 type="button"
                 disabled={busy || !snapshot?.canStep}
                 onClick={() => void handleContinue()}
-                title="继续"
+                title="运行到底"
                 className="rounded-md bg-slate-900 p-1 text-amber-200 hover:bg-slate-800 disabled:opacity-35"
               >
                 <FastForward className="h-3.5 w-3.5" />
@@ -360,12 +409,13 @@ export function PlaygroundWorkspace({
             {snapshot && (
               <div className="flex items-center gap-1.5 font-mono text-[11px]">
                 <span className="rounded bg-slate-900 px-2 py-0.5 text-cyan-300">
-                  T{snapshot.tick}
+                  第 {snapshot.tick} 步
                 </span>
-                <span className="rounded bg-slate-900 px-2 py-0.5 text-slate-300">
-                  PC 0x{snapshot.pc.toString(16).toUpperCase().padStart(4, '0')}
-                  {snapshot.pcLine > 0 ? ` · L${snapshot.pcLine}` : ''}
-                </span>
+                {snapshot.pcLine > 0 && (
+                  <span className="rounded bg-slate-900 px-2 py-0.5 text-slate-300">
+                    第 {snapshot.pcLine} 行
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -374,11 +424,11 @@ export function PlaygroundWorkspace({
         <div className="h-[250px] lg:h-[290px]">
           <CodeEditor
             ref={resolvedEditorRef}
-            value={code}
-            onChange={handleCodeChange}
+            value={visibleCode}
+            onChange={handleVisibleCodeChange}
             language={language}
             readonlyPrefix={level?.editor.readonlyPrefix ?? 0}
-            readonlySuffix={level?.editor.readonlySuffix ?? 0}
+            readonlySuffix={visibleReadonlySuffix}
             highlightLines={level?.editor.highlight ?? []}
             suggested={level?.editor.suggested ?? {}}
             pcLine={debugging ? snapshot?.pcLine ?? 0 : 0}
@@ -395,12 +445,13 @@ export function PlaygroundWorkspace({
 
       <TestResultsPanel
         result={submitResult}
+        disclosure={disclosure}
         onDebugCase={(idx) => void handleDebugStart(idx)}
       />
 
       {!level && (
         <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-1.5">
-          <span className="shrink-0 font-mono text-[11px] text-slate-400">STDIN</span>
+          <span className="shrink-0 font-mono text-[11px] text-slate-400">输入</span>
           <input
             type="text"
             value={sandboxInput}
@@ -411,15 +462,20 @@ export function PlaygroundWorkspace({
         </div>
       )}
 
-      {/* 寄存器芯片板 */}
-      <RegisterPanel
-        regs={snapshot?.regs ?? {}}
-        focusRegs={focusRegs}
-        changedRegs={changedRegs}
-        flashNonce={flashNonce}
-      />
+      {/* 寄存器芯片板（关卡模式下运行/提交后才展示，避免初始全 0 与左侧沙盘打架） */}
+      {showRegsPanel && (
+        <RegisterPanel
+          title={level ? '运行结果' : '寄存器状态'}
+          regs={snapshot?.regs ?? {}}
+          focusRegs={focusRegs}
+          regRoles={regRoles}
+          changedRegs={changedRegs}
+          flashNonce={flashNonce}
+          disclosure={disclosure}
+        />
+      )}
 
-      {/* 内存监视器（仅非空或自由沙盒时展示，避免空文字占屏） */}
+      {/* 内存监视器（仅解锁内存概念或自由沙盒时展示，防止泄露代码段机器码） */}
       {showMemory && (
         <MemoryPanel
           memoryWords={mergedMemory}
@@ -442,10 +498,10 @@ export function PlaygroundWorkspace({
         <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
             <span className="inline-flex items-center gap-1.5">
-              <Terminal className="h-3.5 w-3.5 text-emerald-400" /> STDOUT
+              <Terminal className="h-3.5 w-3.5 text-emerald-400" /> 程序输出
             </span>
             {snapshot?.exitCode !== undefined && (
-              <span className="font-mono text-[11px] text-slate-400">exit {snapshot.exitCode}</span>
+              <span className="font-mono text-[11px] text-slate-400">退出码 {snapshot.exitCode}</span>
             )}
           </div>
           {snapshot?.output && (
@@ -456,7 +512,7 @@ export function PlaygroundWorkspace({
           {snapshot?.generatedAssembly && (
             <details className="rounded-lg border border-slate-800 bg-slate-950/70 p-2">
               <summary className="cursor-pointer font-mono text-xs text-cyan-300">
-                RV32IM ASM ({snapshot.generatedAssembly.split('\n').length} 行)
+                生成的汇编代码（{snapshot.generatedAssembly.split('\n').length} 行）
               </summary>
               <pre className="mt-2 max-h-44 overflow-auto font-mono text-[11px] text-slate-300">
                 {snapshot.generatedAssembly}

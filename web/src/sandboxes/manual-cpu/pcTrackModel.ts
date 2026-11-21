@@ -71,11 +71,11 @@ export function applyPcTrackStep(
     return {
       ...state,
       pcIndex: safePc,
-      recordings: [...state.recordings, { asm: inst.asm, explanation }],
+      recordings: [...state.recordings, { asm: inst.asm, summary: explanation, explanation }],
       undoStack: pushUndo(state),
       lastWrittenReg: null,
       lastWrittenMem: null,
-      feedback: { tone: 'info', message: `${inst.asm}（${explanation}）` },
+      feedback: { tone: 'info', message: explanation },
     };
   }
 
@@ -88,11 +88,11 @@ export function applyPcTrackStep(
     return {
       ...state,
       pcIndex: targetIdx >= 0 ? targetIdx : state.pcIndex + 1,
-      recordings: [...state.recordings, { asm: inst.asm, explanation }],
+      recordings: [...state.recordings, { asm: inst.asm, summary: explanation, explanation }],
       undoStack: pushUndo(state),
       lastWrittenReg: null,
       lastWrittenMem: null,
-      feedback: { tone: 'info', message: `${inst.asm}（${explanation}）` },
+      feedback: { tone: 'info', message: explanation },
     };
   }
 
@@ -101,7 +101,10 @@ export function applyPcTrackStep(
     return {
       ...state,
       halted: true,
-      recordings: [...state.recordings, { asm: inst.asm, explanation: '程序运行结束' }],
+      recordings: [
+        ...state.recordings,
+        { asm: inst.asm, summary: '程序运行结束', explanation: '程序运行结束' },
+      ],
       undoStack: pushUndo(state),
       lastWrittenReg: null,
       lastWrittenMem: null,
@@ -128,14 +131,15 @@ export function applyPcTrackStep(
     nextRegs[dst] = val;
   }
 
+  const summary = `存入 ${dst} ← ${val}`;
   return {
     ...state,
     regs: nextRegs,
     pcIndex: state.pcIndex + 1,
-    recordings: [...state.recordings, { asm: inst.asm, explanation: `${dst} ← ${val}` }],
+    recordings: [...state.recordings, { asm: inst.asm, summary, explanation: `${dst} ← ${val}` }],
     undoStack: pushUndo(state),
     lastWrittenReg: dst || null,
     lastWrittenMem: null,
-    feedback: { tone: 'info', message: `执行 ${inst.asm}（${dst} = ${val}）` },
+    feedback: { tone: 'info', message: summary },
   };
 }

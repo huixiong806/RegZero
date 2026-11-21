@@ -10,9 +10,27 @@
   "prerequisites": [],
   "concepts": ["register", "add"],
   "goalSummary": {
-    "before": "t0 与 t1 中各存着一个整数，t2 初始为 0",
+    "before": "t0 与 t1 中各存着一个整数",
     "after": "计算 t0 + t1，将结果写入 t2"
   },
+  "briefing": [
+    {
+      "tag": "新概念",
+      "text": "**寄存器**，是 CPU 内部用来临时存放整数的高速「格子」。"
+    },
+    {
+      "tag": "本关环境",
+      "text": "这一关提供了 `t0`、`t1`、`t2` 三个寄存器，其中 `t0` 和 `t1` 里已经放好了两个整数。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "算出 `t0` 与 `t1` 的和，并把结果存入 `t2`。"
+    },
+    {
+      "tag": "怎么开始",
+      "text": "先动手试算，再写出**指令**提交。"
+    }
+  ],
   "sandbox": {
     "type": "manual-cpu",
     "modules": ["regs", "alu"],
@@ -37,8 +55,7 @@
   },
   "editor": {
     "readonlyPrefix": 1,
-    "readonlySuffix": 1,
-    "suggested": { "2": "add t2, t0, t1" }
+    "readonlySuffix": 1
   },
   "hints": [
     { "level": 1, "type": "diagram", "content": "add 指令的格式是：add 目标, 左输入, 右输入。先写结果放哪儿，再写谁加谁。" },

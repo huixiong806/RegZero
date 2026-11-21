@@ -1,17 +1,46 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BookOpen, Cpu, Compass, Map, TerminalSquare } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { loadProgress, updateSettings } from '../engine/progressStorage';
-import type { UserProgress } from '../engine/types';
+import { buildKnowledgeState, type KnowledgeState } from '../domain/knowledge';
+import { defaultEngineClient } from '../engine/OnlineWasmClient';
+import { loadProgress, resetAllProgress, updateSettings } from '../engine/progressStorage';
+import type { LevelSummary, UserProgress } from '../engine/types';
+
+function loadInitialProgress(): UserProgress {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') === '1') {
+      const fresh = resetAllProgress();
+      params.delete('reset');
+      const nextSearch = params.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+      window.history.replaceState(null, '', nextUrl);
+      return fresh;
+    }
+  }
+  return loadProgress();
+}
 
 interface AppContextValue {
   progress: UserProgress;
+  levels: LevelSummary[];
+  levelsLoading: boolean;
+  levelsError: string | null;
+  wikiTitles: Record<string, string>;
+  knowledge: KnowledgeState;
   refreshProgress: () => void;
   toggleFreeExplore: () => void;
 }
 
+const initialProgress = loadInitialProgress();
+
 const AppContext = createContext<AppContextValue>({
-  progress: loadProgress(),
+  progress: initialProgress,
+  levels: [],
+  levelsLoading: true,
+  levelsError: null,
+  wikiTitles: {},
+  knowledge: buildKnowledgeState([], initialProgress),
   refreshProgress: () => undefined,
   toggleFreeExplore: () => undefined,
 });
@@ -21,7 +50,52 @@ export function useAppContext(): AppContextValue {
 }
 
 export function AppShell() {
-  const [progress, setProgress] = useState<UserProgress>(() => loadProgress());
+  const [progress, setProgress] = useState<UserProgress>(() => loadInitialProgress());
+  const [levels, setLevels] = useState<LevelSummary[]>([]);
+  const [levelsLoading, setLevelsLoading] = useState(true);
+  const [levelsError, setLevelsError] = useState<string | null>(null);
+  const [wikiTitles, setWikiTitles] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let active = true;
+    defaultEngineClient
+      .listWiki()
+      .then((list) => {
+        if (!active) return;
+        const map: Record<string, string> = {};
+        for (const item of list) map[item.topic] = item.title;
+        setWikiTitles(map);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    defaultEngineClient
+      .listLevels(progress)
+      .then((list) => {
+        if (!active) return;
+        setLevels(list);
+        setLevelsError(null);
+      })
+      .catch((err) => {
+        if (active) setLevelsError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (active) setLevelsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [progress]);
+
+  const knowledge = useMemo(
+    () => buildKnowledgeState(levels, progress),
+    [levels, progress],
+  );
 
   const refreshProgress = () => setProgress(loadProgress());
 
@@ -38,7 +112,18 @@ export function AppShell() {
     }`;
 
   return (
-    <AppContext.Provider value={{ progress, refreshProgress, toggleFreeExplore }}>
+    <AppContext.Provider
+      value={{
+        progress,
+        levels,
+        levelsLoading,
+        levelsError,
+        wikiTitles,
+        knowledge,
+        refreshProgress,
+        toggleFreeExplore,
+      }}
+    >
       <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
         <header className="sticky top-0 z-30 border-b border-slate-800/90 bg-slate-950/90 backdrop-blur">
           <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-2.5">
@@ -55,27 +140,19 @@ export function AppShell() {
                   <Map className="h-3.5 w-3.5" /> 关卡技能树
                 </NavLink>
                 <NavLink to="/playground" className={navClass}>
-                  <TerminalSquare className="h-3.5 w-3.5" /> 独立 Playground
+                  <TerminalSquare className="h-3.5 w-3.5" /> 自由练习
                 </NavLink>
-                <NavLink to="/wiki/rv32-registers" className={navClass}>
+                <NavLink to="/wiki" className={navClass}>
                   <BookOpen className="h-3.5 w-3.5" /> 概念图鉴
                 </NavLink>
               </nav>
             </div>
 
             <div className="flex items-center gap-2">
-              <span
-                title="浏览器内置 nmc-wasm 引擎就绪"
-                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-950/30 px-2.5 py-1 font-mono text-[11px] text-emerald-300"
-              >
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                WASM
-              </span>
-
               <button
                 type="button"
                 onClick={toggleFreeExplore}
-                title="开启后无需前置即可跳关"
+                title="开启后无需前置即可跳关，并展示全部图鉴与底层硬件信息"
                 className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
                   progress.settings.freeExplore
                     ? 'border-amber-400/60 bg-amber-500/20 text-amber-200'

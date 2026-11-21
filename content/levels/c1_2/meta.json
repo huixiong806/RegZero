@@ -13,6 +13,24 @@
     "before": "t0 中有一个未知整数（没有任何寄存器里存着 7）",
     "after": "计算 t0 + 7，将结果存入 t1"
   },
+  "briefing": [
+    {
+      "tag": "遇到问题",
+      "text": "这一关要把 `t0` 加上 `7`，但你会发现——**没有任何寄存器里存着 7**。"
+    },
+    {
+      "tag": "新工具",
+      "text": "直接写进指令里的数字叫做**常量**（也叫立即数），用 `addi` 就能把「寄存器 + 常量」的结果存进目标寄存器。"
+    },
+    {
+      "tag": "特殊格子",
+      "text": "本关还多了一个 `zero` 寄存器：它**永远等于 0**，任何写入都不会改变它。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "计算 `t0 + 7`，将结果存入 `t1`。"
+    }
+  ],
   "sandbox": {
     "type": "manual-cpu",
     "modules": ["regs", "constants", "alu"],
@@ -40,8 +58,7 @@
   },
   "editor": {
     "readonlyPrefix": 1,
-    "readonlySuffix": 1,
-    "suggested": { "2": "addi t1, t0, 7" }
+    "readonlySuffix": 1
   },
   "hints": [
     { "level": 1, "type": "diagram", "content": "addi 末尾的 i 代表 immediate（立即数），第三个位置直接写固定整数 7。" },

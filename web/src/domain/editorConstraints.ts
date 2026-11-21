@@ -43,3 +43,38 @@ export function getReadonlyLineSet(lineCount: number, bounds: ReadonlyBounds): S
   }
   return set;
 }
+
+export interface HiddenSuffixSplit {
+  visibleCode: string;
+  hiddenSuffix: string;
+  visibleReadonlySuffix: number;
+}
+
+/**
+ * 在尚未教授 `ecall` 前，剥离末尾只读收尾行（保持前方行号 1:1 不变），
+ * 供编辑器纯净展示；保存草稿、运行与提交时再无损拼回完整源码。
+ */
+export function splitHiddenReadonlySuffix(
+  fullCode: string,
+  readonlySuffix: number,
+  hideSuffix: boolean,
+): HiddenSuffixSplit {
+  if (!hideSuffix || readonlySuffix <= 0) {
+    return { visibleCode: fullCode, hiddenSuffix: '', visibleReadonlySuffix: readonlySuffix };
+  }
+  const lines = fullCode.split('\n');
+  if (lines.length <= readonlySuffix) {
+    return { visibleCode: fullCode, hiddenSuffix: '', visibleReadonlySuffix: readonlySuffix };
+  }
+  return {
+    visibleCode: lines.slice(0, lines.length - readonlySuffix).join('\n'),
+    hiddenSuffix: lines.slice(lines.length - readonlySuffix).join('\n'),
+    visibleReadonlySuffix: 0,
+  };
+}
+
+/** 将编辑后的可见代码与隐藏后缀无损拼回完整源码。 */
+export function joinHiddenSuffix(visibleCode: string, hiddenSuffix: string): string {
+  if (!hiddenSuffix) return visibleCode;
+  return `${visibleCode}\n${hiddenSuffix}`;
+}

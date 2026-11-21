@@ -68,16 +68,24 @@ fn every_level_is_solvable_with_its_reference_solution() {
     }
 }
 
-/// 关卡元数据、编辑约束、DAG 前置、Par 指标与无魔法词汇一致性守卫。
+/// 关卡元数据、编辑约束、DAG 前置、Par 指标、结构化 Wiki 与无魔法词汇一致性守卫。
 #[test]
 fn every_level_page_and_test_config_are_consistent() {
     let store = LevelStore::default_repo();
     let ids = store.level_ids();
     assert!(!ids.is_empty(), "没有找到任何关卡");
     let known_ids: BTreeSet<String> = ids.iter().cloned().collect();
+    let wiki_entries = store.list_wiki().expect("所有 content/wiki/*.json 必须能正确解析");
+    assert!(!wiki_entries.is_empty(), "没有找到任何结构化 Wiki 词条");
+    let wiki_map: std::collections::BTreeMap<String, crate::dto::WikiEntry> =
+        wiki_entries.iter().cloned().map(|w| (w.topic.clone(), w)).collect();
     let forbidden_story_words = ["魔导", "星之语", "星咒", "记忆晶阵", "星泠", "岩舟"];
 
     let mut problems = Vec::new();
+    for entry in &wiki_entries {
+        problems.extend(check_wiki_entry(entry, &forbidden_story_words));
+    }
+
     for id in &ids {
         match store.load(id) {
             Ok(bundle) => {
@@ -112,6 +120,13 @@ fn every_level_page_and_test_config_are_consistent() {
                     }
                 }
 
+                // 校验关卡引用的 wikiRefs 全部存在
+                for topic in &meta.wiki_refs {
+                    if !wiki_map.contains_key(topic) {
+                        problems.push(format!("{}：wikiRefs 引用了不存在的词条 `{}`", id, topic));
+                    }
+                }
+
                 // 校验 Par 指令数：参考解必须满足 <= parInstructions
                 if let (Some(par), Some(sol)) = (meta.par_instructions, &bundle.solution) {
                     match crate::runner::Runner::new(bundle.config.clone(), sol) {
@@ -125,6 +140,21 @@ fn every_level_page_and_test_config_are_consistent() {
                             }
                         }
                         Err(e) => problems.push(format!("{}：参考解编译失败：{:?}", id, e)),
+                    }
+                }
+
+                // 校验首次进场微引导（briefing）非空且无废弃剧情词
+                for (bi, slide) in meta.briefing.iter().enumerate() {
+                    if slide.text.trim().is_empty() {
+                        problems.push(format!("{}：briefing[{}] 的 text 不能为空", id, bi));
+                    }
+                    for word in forbidden_story_words {
+                        if slide.text.contains(word) {
+                            problems.push(format!(
+                                "{}：briefing[{}] 检测到废弃魔法/剧情词 `{}`",
+                                id, bi, word
+                            ));
+                        }
                     }
                 }
 
@@ -144,6 +174,66 @@ fn every_level_page_and_test_config_are_consistent() {
         }
     }
     assert!(problems.is_empty(), "关卡配置不一致：\n{}", problems.join("\n"));
+}
+
+#[cfg(test)]
+fn check_wiki_entry(entry: &crate::dto::WikiEntry, forbidden: &[&str]) -> Vec<String> {
+    let mut problems = Vec::new();
+    if entry.title.trim().is_empty() {
+        problems.push(format!("wiki/{}：title 不能为空", entry.topic));
+    }
+    if entry.sections.is_empty() {
+        problems.push(format!("wiki/{}：sections 不能为空", entry.topic));
+    }
+    let check_text = |text: &str, ctx: &str, problems: &mut Vec<String>| {
+        for word in forbidden {
+            if text.contains(word) {
+                problems.push(format!("wiki/{} ({})：检测到废弃剧情词 `{}`", entry.topic, ctx, word));
+            }
+        }
+    };
+    check_text(&entry.title, "title", &mut problems);
+    if let Some(summary) = &entry.summary {
+        check_text(summary, "summary", &mut problems);
+    }
+    let mut seen_sections = BTreeSet::new();
+    for sec in &entry.sections {
+        if !seen_sections.insert(sec.id.as_str()) {
+            problems.push(format!("wiki/{}：重复的 section id `{}`", entry.topic, sec.id));
+        }
+        if let Some(h) = &sec.heading {
+            check_text(h, &sec.id, &mut problems);
+        }
+        match &sec.body {
+            crate::dto::WikiSectionBody::Markdown { markdown } => {
+                if markdown.trim().is_empty() {
+                    problems.push(format!("wiki/{}：markdown 段 `{}` 不能为空", entry.topic, sec.id));
+                }
+                check_text(markdown, &sec.id, &mut problems);
+            }
+            crate::dto::WikiSectionBody::Table { columns, rows } => {
+                if columns.is_empty() || rows.is_empty() {
+                    problems.push(format!(
+                        "wiki/{}：table 段 `{}` 的 columns 与 rows 均不能为空",
+                        entry.topic, sec.id
+                    ));
+                }
+                let col_ids: BTreeSet<&str> = columns.iter().map(|c| c.id.as_str()).collect();
+                for row in rows {
+                    for (k, v) in &row.cells {
+                        if !col_ids.contains(k.as_str()) {
+                            problems.push(format!(
+                                "wiki/{}：table `{}` 行 `{}` 引用了未定义列 `{}`",
+                                entry.topic, sec.id, row.id, k
+                            ));
+                        }
+                        check_text(v, &row.id, &mut problems);
+                    }
+                }
+            }
+        }
+    }
+    problems
 }
 
 fn check_editor_constraints(bundle: &crate::levels::LevelBundle) -> Vec<String> {

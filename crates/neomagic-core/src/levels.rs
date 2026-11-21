@@ -35,6 +35,15 @@ pub struct GoalSummary {
     pub after: String,
 }
 
+/// 首次进场的多页口语化微引导（每页 1~2 句话，结束后动画收起至「规则」按钮）。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BriefingSlide {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    pub text: String,
+}
+
 /// 按需展开的分级提示（1 思路 / 2 步骤 / 3 代码片段）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -129,6 +138,9 @@ pub struct LevelMeta {
     pub concepts: Vec<String>,
     #[serde(default)]
     pub goal_summary: GoalSummary,
+    /// 首次进入该关弹出的多页口语化微引导卡片
+    #[serde(default)]
+    pub briefing: Vec<BriefingSlide>,
     /// 数据驱动沙盘配置（保持 JSON 开放结构，便于 4 套沙盘独立演进）
     #[serde(default)]
     pub sandbox: serde_json::Value,
@@ -250,7 +262,7 @@ impl Content {
         dirs.into_iter().collect()
     }
 
-    /// 枚举 `wiki/` 下所有词条名（不含 `.md` 后缀）。
+    /// 枚举 `wiki/` 下所有结构化词条名（不含 `.json` 后缀）。
     fn wiki_topics(&self) -> Vec<String> {
         let mut topics: BTreeSet<String> = BTreeSet::new();
         match self {
@@ -260,7 +272,7 @@ impl Content {
                 };
                 for entry in entries.flatten() {
                     let name = entry.file_name().to_string_lossy().to_string();
-                    if let Some(stem) = name.strip_suffix(".md") {
+                    if let Some(stem) = name.strip_suffix(".json") {
                         topics.insert(stem.to_string());
                     }
                 }
@@ -269,7 +281,7 @@ impl Content {
                 for rel in crate::embedded::paths() {
                     let Some(name) = rel.strip_prefix("wiki/") else { continue };
                     if !name.contains('/') {
-                        if let Some(stem) = name.strip_suffix(".md") {
+                        if let Some(stem) = name.strip_suffix(".json") {
                             topics.insert(stem.to_string());
                         }
                     }
@@ -451,11 +463,32 @@ impl LevelStore {
         self.content.wiki_topics()
     }
 
-    /// 读取单篇 Wiki 词条 Markdown 原文。
-    pub fn load_wiki(&self, topic: &str) -> Option<String> {
-        self.content
-            .read(&format!("wiki/{}.md", topic))
-            .map(|s| s.replace("\r\n", "\n"))
+    /// 读取并解析单篇结构化 Wiki 词条（`content/wiki/<topic>.json`）。
+    pub fn load_wiki(&self, topic: &str) -> Result<crate::dto::WikiEntry, String> {
+        let rel = format!("wiki/{}.json", topic);
+        let raw = self
+            .content
+            .read(&rel)
+            .ok_or_else(|| format!("找不到概念图鉴词条：{}", topic))?;
+        let entry: crate::dto::WikiEntry = serde_json::from_str(&raw)
+            .map_err(|e| format!("解析概念图鉴 {} 失败：{}", rel, e))?;
+        if entry.topic != topic {
+            return Err(format!(
+                "概念图鉴 {} 的 topic 字段为 `{}`，与文件名不一致",
+                rel, entry.topic
+            ));
+        }
+        Ok(entry)
+    }
+
+    /// 按 `(order, topic)` 顺序读取全部结构化 Wiki 词条。
+    pub fn list_wiki(&self) -> Result<Vec<crate::dto::WikiEntry>, String> {
+        let mut out = Vec::new();
+        for topic in self.wiki_topics() {
+            out.push(self.load_wiki(&topic)?);
+        }
+        out.sort_by(|a, b| (a.order, &a.topic).cmp(&(b.order, &b.topic)));
+        Ok(out)
     }
 
     /// 关卡自检：用参考解跑一遍判定确认可解。

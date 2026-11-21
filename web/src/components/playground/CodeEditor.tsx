@@ -91,13 +91,15 @@ const darkHighlight = HighlightStyle.define([
 
 class GhostHintWidget extends WidgetType {
   private readonly text: string;
-  constructor(text: string) {
+  private readonly prefix: string;
+  constructor(text: string, language: Language) {
     super();
     this.text = text;
+    this.prefix = language === 'asm' ? '  # 示例：' : '  // 示例：';
   }
   toDOM(): HTMLElement {
     const span = document.createElement('span');
-    span.textContent = `  // 示例：${this.text}`;
+    span.textContent = `${this.prefix}${this.text}`;
     span.className = 'pointer-events-none select-none text-slate-600 italic';
     return span;
   }
@@ -106,6 +108,7 @@ class GhostHintWidget extends WidgetType {
 function buildLineDecorations(
   view: EditorView,
   opts: {
+    language: Language;
     readonlyPrefix: number;
     readonlySuffix: number;
     highlightLines: number[];
@@ -139,7 +142,7 @@ function buildLineDecorations(
       builder.add(
         line.to,
         line.to,
-        Decoration.widget({ widget: new GhostHintWidget(hint), side: 1 }),
+        Decoration.widget({ widget: new GhostHintWidget(hint, opts.language), side: 1 }),
       );
     }
   }
@@ -271,6 +274,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
         decorations: DecorationSet;
         constructor(v: EditorView) {
           this.decorations = buildLineDecorations(v, {
+            language,
             readonlyPrefix,
             readonlySuffix,
             highlightLines,
@@ -282,6 +286,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
         update(u: ViewUpdate) {
           if (u.docChanged || u.viewportChanged) {
             this.decorations = buildLineDecorations(u.view, {
+              language,
               readonlyPrefix,
               readonlySuffix,
               highlightLines,
@@ -301,7 +306,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
         decorCompartment.current.reconfigure(decorPlugin),
       ],
     });
-  }, [readonlyPrefix, readonlySuffix, highlightLines, suggested, pcLine, errorLines]);
+  }, [language, readonlyPrefix, readonlySuffix, highlightLines, suggested, pcLine, errorLines]);
 
   return (
     <div

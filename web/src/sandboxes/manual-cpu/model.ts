@@ -9,9 +9,101 @@ export type SourceOperand =
   | { kind: 'reg'; name: string }
   | { kind: 'const'; card: ConstantCard };
 
+export type RecordedOpKind = 'add' | 'addi' | 'sub' | 'mv' | 'mul' | 'div' | 'rem' | 'li';
+
+export interface SyntaxSlot {
+  label: string;
+  role: 'dest' | 'input' | 'const';
+}
+
+export interface SyntaxPattern {
+  op: RecordedOpKind;
+  slots: readonly SyntaxSlot[];
+}
+
+const SYNTAX_PATTERNS: Record<RecordedOpKind, SyntaxPattern> = {
+  add: {
+    op: 'add',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '输入 1', role: 'input' },
+      { label: '输入 2', role: 'input' },
+    ],
+  },
+  addi: {
+    op: 'addi',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '输入', role: 'input' },
+      { label: '常量', role: 'const' },
+    ],
+  },
+  sub: {
+    op: 'sub',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '左输入', role: 'input' },
+      { label: '右输入', role: 'input' },
+    ],
+  },
+  mv: {
+    op: 'mv',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '来源', role: 'input' },
+    ],
+  },
+  mul: {
+    op: 'mul',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '左输入', role: 'input' },
+      { label: '右输入', role: 'input' },
+    ],
+  },
+  div: {
+    op: 'div',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '左输入', role: 'input' },
+      { label: '右输入', role: 'input' },
+    ],
+  },
+  rem: {
+    op: 'rem',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '左输入', role: 'input' },
+      { label: '右输入', role: 'input' },
+    ],
+  },
+  li: {
+    op: 'li',
+    slots: [
+      { label: '存入', role: 'dest' },
+      { label: '常量', role: 'const' },
+    ],
+  },
+};
+
 export interface RecordedStep {
   asm: string;
+  opKind?: RecordedOpKind;
+  /** 不剧透具体指令答案的中文语义摘要（用于沙盘操作回显）。 */
+  summary: string;
   explanation: string;
+}
+
+/** 按首次使用顺序收集玩家在沙盘中触发过的抽象指令格式（用于同色语法骨架展示）。 */
+export function collectUsedSyntaxPatterns(recordings: readonly RecordedStep[]): SyntaxPattern[] {
+  const seen = new Set<RecordedOpKind>();
+  const out: SyntaxPattern[] = [];
+  for (const step of recordings) {
+    if (!step.opKind || seen.has(step.opKind)) continue;
+    seen.add(step.opKind);
+    out.push(SYNTAX_PATTERNS[step.opKind]);
+  }
+  return out;
 }
 
 export interface FeedbackBanner {
@@ -204,37 +296,48 @@ export function applyAluOperation(
 
   let result = 0;
   let asm = '';
+  let opKind: RecordedOpKind = 'add';
+  let summary = '';
   let explanation = '';
 
   if (left.kind === 'const' || right.kind === 'const') {
     const regSrc = left.kind === 'reg' ? left.name : (right as { kind: 'reg'; name: string }).name;
     const card = left.kind === 'const' ? left.card : (right as { kind: 'const'; card: ConstantCard }).card;
+    const regVal = i32(state.regs[regSrc] ?? 0);
     result = i32(aVal + bVal);
+    opKind = 'addi';
     asm = `addi ${destReg}, ${regSrc}, ${card.value}`;
-    explanation = `${destReg} = ${regSrc}(${i32(state.regs[regSrc] ?? 0)}) + ${card.value} = ${result}`;
+    summary = `${regSrc}(${regVal}) + 常量(${card.value}) → 存入 ${destReg}(${result})`;
+    explanation = `${destReg} = ${regSrc}(${regVal}) + ${card.value} = ${result}`;
   } else {
     switch (op) {
       case '+':
         result = i32(aVal + bVal);
+        opKind = 'add';
         asm = `add ${destReg}, ${left.name}, ${right.name}`;
         break;
       case '-':
         result = i32(aVal - bVal);
+        opKind = 'sub';
         asm = `sub ${destReg}, ${left.name}, ${right.name}`;
         break;
       case '×':
         result = Math.imul(aVal, bVal);
+        opKind = 'mul';
         asm = `mul ${destReg}, ${left.name}, ${right.name}`;
         break;
       case '÷':
         result = i32(Math.trunc(aVal / bVal));
+        opKind = 'div';
         asm = `div ${destReg}, ${left.name}, ${right.name}`;
         break;
       case '%':
         result = i32(aVal % bVal);
+        opKind = 'rem';
         asm = `rem ${destReg}, ${left.name}, ${right.name}`;
         break;
     }
+    summary = `${left.name}(${aVal}) ${op} ${right.name}(${bVal}) → 存入 ${destReg}(${result})`;
     explanation = `${destReg} = ${aVal} ${op} ${bVal} = ${result}`;
   }
 
@@ -245,14 +348,14 @@ export function applyAluOperation(
   return {
     ...state,
     regs: nextRegs,
-    recordings: [...state.recordings, { asm, explanation }],
+    recordings: [...state.recordings, { asm, opKind, summary, explanation }],
     undoStack: pushUndo(state),
     lastWrittenReg: destReg,
     lastWrittenMem: null,
     completed,
     feedback: completed
-      ? { tone: 'success', message: '目标达成！你刚才的手工操作已全部录制成右侧可用的 RISC-V 指令。' }
-      : warn ?? { tone: 'info', message: `已执行：${asm}（${explanation}）` },
+      ? { tone: 'success', message: '试算达成目标！现在可以去右侧写出对应的指令了。' }
+      : warn ?? { tone: 'info', message: summary },
   };
 }
 
@@ -275,16 +378,19 @@ export function applyDirectCopy(
 
   const nextVal =
     source.kind === 'reg' ? i32(state.regs[source.name] ?? 0) : i32(source.card.value);
+  const opKind: RecordedOpKind =
+    source.kind === 'reg' ? 'mv' : source.card.kind === 'address' ? 'li' : 'addi';
   const asm =
     source.kind === 'reg'
       ? `mv ${destReg}, ${source.name}`
       : source.card.kind === 'address'
         ? `li ${destReg}, ${source.card.label}`
         : `addi ${destReg}, zero, ${source.card.value}`;
-  const explanation =
+  const summary =
     source.kind === 'reg'
-      ? `将 ${source.name}(${nextVal}) 复制到 ${destReg}`
-      : `将常量 ${source.card.label} 装入 ${destReg}`;
+      ? `复制 ${source.name}(${nextVal}) → 存入 ${destReg}(${nextVal})`
+      : `装入常量(${source.card.label}) → 存入 ${destReg}(${nextVal})`;
+  const explanation = summary;
 
   const nextRegs = { ...state.regs, [destReg]: nextVal };
   const warn = checkOverwriteLostValue(config, state.caseIndex, state.regs, nextRegs, destReg);
@@ -293,14 +399,14 @@ export function applyDirectCopy(
   return {
     ...state,
     regs: nextRegs,
-    recordings: [...state.recordings, { asm, explanation }],
+    recordings: [...state.recordings, { asm, opKind, summary, explanation }],
     undoStack: pushUndo(state),
     lastWrittenReg: destReg,
     lastWrittenMem: null,
     completed,
     feedback: completed
-      ? { tone: 'success', message: '目标达成！你刚才的手工操作已全部录制成 RISC-V 指令。' }
-      : warn ?? { tone: 'info', message: `已执行：${asm}（${explanation}）` },
+      ? { tone: 'success', message: '试算达成目标！现在可以去右侧写出对应的指令了。' }
+      : warn ?? { tone: 'info', message: summary },
   };
 }
 

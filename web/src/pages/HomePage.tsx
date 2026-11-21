@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   Award,
@@ -8,12 +7,10 @@ import {
   Lock,
   Play,
   Sparkles,
-  TerminalSquare,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../app/AppShell';
 import { buildChapterSpine, nextRecommendedLevel } from '../domain/dag';
-import { defaultEngineClient } from '../engine/OnlineWasmClient';
 import type { LevelSummary } from '../engine/types';
 
 const ROADMAP = [
@@ -27,32 +24,7 @@ const ROADMAP = [
 ];
 
 export function HomePage() {
-  const { progress } = useAppContext();
-  const [levels, setLevels] = useState<LevelSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    defaultEngineClient
-      .listLevels(progress)
-      .then((list) => {
-        if (active) {
-          setLevels(list);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [progress]);
+  const { levels, levelsLoading: loading, levelsError: error } = useAppContext();
 
   const chapter1 = levels.filter((l) => l.chapter === 1);
   const spine = buildChapterSpine(chapter1);
@@ -90,15 +62,9 @@ export function HomePage() {
               to={`/level/${recommended.id}`}
               className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-400 px-4 py-2 text-xs font-bold text-slate-950 shadow hover:bg-cyan-300"
             >
-              <Play className="h-3.5 w-3.5" /> {recommended.id}
+              <Play className="h-3.5 w-3.5" /> {passedCount === 0 ? `开始 ${recommended.id}` : `继续 ${recommended.id}`}
             </Link>
           )}
-          <Link
-            to="/playground"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800"
-          >
-            <TerminalSquare className="h-3.5 w-3.5 text-cyan-400" /> Playground
-          </Link>
         </div>
       </section>
 
@@ -117,7 +83,7 @@ export function HomePage() {
           </span>
         </div>
 
-        {loading && <div className="py-10 text-center font-mono text-xs text-slate-500">LOADING WASM…</div>}
+        {loading && <div className="py-10 text-center text-xs text-slate-500">正在加载关卡…</div>}
         {error && (
           <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
             {error}

@@ -1,0 +1,106 @@
+{
+  "topic": "rv32-registers",
+  "title": "寄存器速查",
+  "order": 1,
+  "unlockAny": ["register"],
+  "summary": "寄存器是 CPU 内部速度最快的「数字格」，用来临时存放正在计算的整数。随着关卡推进，这里会逐步补充更多寄存器的用途。",
+  "sections": [
+    {
+      "id": "reg-table",
+      "heading": "已解锁的寄存器",
+      "unlockAny": ["register"],
+      "kind": "table",
+      "columns": [
+        { "id": "abi", "label": "名称", "unlockAny": [] },
+        { "id": "xName", "label": "硬件编号", "unlockAny": ["reg-hardware-id"] },
+        { "id": "role", "label": "用途与约定", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "t0-t2",
+          "unlockAny": ["register"],
+          "cells": {
+            "abi": "`t0`–`t2`",
+            "xName": "`x5`–`x7`",
+            "role": "**临时寄存器**（计算主力，放心读写）"
+          }
+        },
+        {
+          "id": "zero",
+          "unlockAny": ["zero"],
+          "cells": {
+            "abi": "`zero`",
+            "xName": "`x0`",
+            "role": "**恒为 0**，任何写入都会被硬件自动忽略"
+          }
+        },
+        {
+          "id": "t3-t6",
+          "unlockAny": ["temp-register"],
+          "cells": {
+            "abi": "`t3`–`t6`",
+            "xName": "`x28`–`x31`",
+            "role": "**扩展临时寄存器**（更多草稿暂存槽）"
+          }
+        },
+        {
+          "id": "ra",
+          "unlockAny": ["function", "call-stack"],
+          "cells": {
+            "abi": "`ra`",
+            "xName": "`x1`",
+            "role": "返回地址（调用子程序时自动写入，不要当普通临时槽）"
+          }
+        },
+        {
+          "id": "sp",
+          "unlockAny": ["stack"],
+          "cells": {
+            "abi": "`sp`",
+            "xName": "`x2`",
+            "role": "栈指针（默认初值 `0xF000`，向低地址增长）"
+          }
+        },
+        {
+          "id": "a0-a7",
+          "unlockAny": ["function", "syscall"],
+          "cells": {
+            "abi": "`a0`–`a7`",
+            "xName": "`x10`–`x17`",
+            "role": "函数参数与返回值；`a7` 兼作 `ecall` 系统调用号"
+          }
+        },
+        {
+          "id": "s0-s11",
+          "unlockAny": ["saved-register"],
+          "cells": {
+            "abi": "`s0`–`s11`",
+            "xName": "`x8`–`x9`, `x18`–`x27`",
+            "role": "保存寄存器（跨函数调用需由被调者保存并恢复）"
+          }
+        }
+      ]
+    },
+    {
+      "id": "overwrite-rule",
+      "heading": "覆盖写与暂存槽",
+      "unlockAny": ["overwrite"],
+      "kind": "markdown",
+      "markdown": "寄存器赋值是**覆盖写**：写入新值后，格子里原来的旧值会立刻消失。如果要交换两个寄存器的内容，务必先借一个空闲临时寄存器（如 `t3`）把其中一个值备份出来。"
+    },
+    {
+      "id": "wraparound-32bit",
+      "heading": "32 位整数范围与回绕",
+      "unlockAny": ["modular-arithmetic"],
+      "kind": "markdown",
+      "markdown": "每个通用寄存器存放一个 32 位有符号整数（范围 `-2,147,483,648` ~ `2,147,483,647`）。当加减法超出范围时，硬件会按模 2³² 自动回绕，因此原地加减交换技巧即使在大数情况下依然精确成立。"
+    },
+    {
+      "id": "abi-xname-note",
+      "heading": "为什么每个寄存器还有 x0–x31 编号？",
+      "unlockAny": ["reg-hardware-id"],
+      "kind": "markdown",
+      "markdown": "RISC-V 硬件内部其实只认识 32 个编号 `x0`–`x31`。`t0`、`zero`、`sp`、`ra` 是软件层约定的 **ABI 别名**，方便程序员一眼分辨分工；汇编器在翻译成机器码时会自动把别名映射回对应的 `xN` 编号。"
+    }
+  ]
+}
