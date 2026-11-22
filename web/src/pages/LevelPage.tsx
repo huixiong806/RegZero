@@ -127,7 +127,10 @@ export function LevelPage() {
     );
   }
 
-  const passed = Boolean(progress.levels[level.id]?.passed);
+  const record = progress.levels[level.id];
+  const passed = Boolean(record?.passed);
+  const metPar = Boolean(record?.metPar);
+  const bestSteps = record?.bestSteps;
   const nextUnlocked = levels.filter(
     (l) => l.prerequisites.includes(level.id) && l.id !== level.id,
   );
@@ -135,6 +138,10 @@ export function LevelPage() {
   const nextSide = nextUnlocked.find((l) => l.kind === 'challenge');
 
   const isManualCpu = level.meta.sandbox.type === 'manual-cpu';
+  const isMonitorOnly =
+    isManualCpu &&
+    level.meta.sandbox.recordToAsm === false &&
+    !level.meta.sandbox.pcTrack;
   const wantsWarmup = isManualCpu && Boolean(level.meta.sandbox.focusWarmupFirst);
   const isPlayingCode = Boolean(livePlayback?.active);
   const dimRight = wantsWarmup && !isPlayingCode && focusStage === 'sandbox';
@@ -145,6 +152,9 @@ export function LevelPage() {
       <GoalCard
         meta={level.meta}
         passed={passed}
+        metPar={metPar}
+        bestSteps={bestSteps}
+        benchmarkCount={level.benchmarkCount}
         justPassed={justPassed}
         nextMain={nextMain}
         nextSide={nextSide}
@@ -196,6 +206,8 @@ export function LevelPage() {
                 </>
               ) : isPlayingCode ? (
                 'CPU 执行舞台'
+              ) : isMonitorOnly ? (
+                'CPU 执行监视器'
               ) : (
                 'CPU 舞台（可选手动试算）'
               )}
@@ -274,6 +286,7 @@ export function LevelPage() {
       <InfoDrawer
         mode={drawerMode}
         title={`${level.id} · ${level.meta.title}`}
+        storySummary={level.meta.briefing?.[0]}
         beforeText={level.meta.goalSummary.before}
         afterText={level.meta.goalSummary.after}
         lessonMarkdown={level.lessonMarkdown}

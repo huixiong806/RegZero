@@ -32,6 +32,9 @@ export function renderSandbox({
           config={config}
           showRegXName={disclosure?.showRegXName ?? false}
           allowExpandAllRegs={disclosure?.showAllRegsToggle ?? false}
+          showHexToggle={disclosure?.showHexToggle ?? false}
+          showBinToggle={disclosure?.showBinToggle ?? false}
+          showPcAddress={disclosure?.showPcAddress ?? false}
           immediateUnlocked={disclosure?.showImmediatePort ?? false}
           showJumpRail={disclosure?.showJumpRail ?? false}
           memoryUnlocked={disclosure?.showMemoryPanel ?? false}

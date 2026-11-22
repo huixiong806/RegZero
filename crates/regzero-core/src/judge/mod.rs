@@ -16,6 +16,12 @@ pub struct TestVerdict {
     /// 测例名（展示给玩家）
     pub name: String,
     pub passed: bool,
+    /// 本条测例动态执行的指令步数（用于性能金牌判定）
+    pub steps: u64,
+    /// 是否为隐藏测例（包括固定隐藏与动态随机）
+    pub hidden: bool,
+    /// 是否为动态随机抽测（不计入 `parSteps` 基准步数）
+    pub is_random: bool,
     /// 失败时的一句话说明
     pub detail: String,
     /// 期望值 vs 实际值的明细（最多几条）
@@ -91,12 +97,16 @@ pub struct Verdict {
     pub passed: bool,
     /// 0–100
     pub score: u32,
+    /// 固定基准测例（公开 + 固定种子隐藏）动态执行的总指令步数（性能金牌指标）
+    pub total_steps: u64,
+    /// 计入 `total_steps` 的固定基准测例条数
+    pub benchmark_count: usize,
     /// 一句话总结
     pub summary: String,
     pub tests: Vec<TestVerdict>,
     /// 编译错误（若有）
     pub errors: Vec<CodeError>,
-    /// 星咒关卡：编译器生成的汇编文本（给玩家看）
+    /// C 子集关卡：编译器生成的汇编文本（给玩家看）
     pub generated_assembly: Option<String>,
 }
 
@@ -110,6 +120,8 @@ impl Verdict {
             level: level.to_string(),
             passed: false,
             score: 0,
+            total_steps: 0,
+            benchmark_count: 0,
             summary,
             tests: Vec::new(),
             errors,
@@ -172,10 +184,15 @@ pub fn judge(config: &LevelConfig, code: &str) -> Verdict {
         "没有测例可判定".to_string()
     };
 
+    // 仅统计固定基准测例（非动态随机）的步数，保证性能金牌线 100% 公平且确定
+    let benchmark_count = verdicts.iter().filter(|v| !v.is_random).count();
+    let total_steps: u64 = verdicts.iter().filter(|v| !v.is_random).map(|v| v.steps).sum();
     Verdict {
         level: config.level.clone(),
         passed,
         score,
+        total_steps,
+        benchmark_count,
         summary,
         tests: verdicts,
         errors: Vec::new(),
@@ -214,11 +231,12 @@ pub fn check_case(
             .pause_detail
             .clone()
             .unwrap_or_else(|| "运行时错误".to_string());
-        return failed(name, detail, diffs, site(FailureReason::Runtime), outcome);
+        return failed(name, case, detail, diffs, site(FailureReason::Runtime), outcome);
     }
     if outcome.state.pause_kind == "limit" {
         return failed(
             name,
+            case,
             "程序执行指令数超过上限（可能是死循环，检查循环的退出条件）".to_string(),
             diffs,
             site(FailureReason::Limit),
@@ -322,6 +340,9 @@ pub fn check_case(
         TestVerdict {
             name,
             passed: true,
+            steps: outcome.state.instructions,
+            hidden: case.hidden,
+            is_random: case.is_random,
             detail: "通过".to_string(),
             diffs,
             failure_site: None,
@@ -345,12 +366,13 @@ pub fn check_case(
         let mut s = site(reason);
         s.line = 0;
         let _ = &config;
-        failed(name, detail, diffs, s, outcome)
+        failed(name, case, detail, diffs, s, outcome)
     }
 }
 
 fn failed(
     name: String,
+    case: &TestCase,
     detail: String,
     diffs: Vec<Diff>,
     site: FailureSite,
@@ -359,6 +381,9 @@ fn failed(
     TestVerdict {
         name,
         passed: false,
+        steps: outcome.state.instructions,
+        hidden: case.hidden,
+        is_random: case.is_random,
         detail,
         diffs,
         failure_site: Some(site),

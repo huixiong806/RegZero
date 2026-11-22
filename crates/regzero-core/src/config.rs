@@ -122,6 +122,10 @@ pub struct TestCase {
     pub batch_output: bool,
     /// 单条测例的指令数上限覆盖
     pub max_instructions: Option<u64>,
+    /// 是否为隐藏测例（平时不在公开测例列表中展示，提交失败时仅披露第一条失败点）
+    pub hidden: bool,
+    /// 是否为动态随机抽测（仅判正确性防打表，不计入 `parSteps` 基准步数）
+    pub is_random: bool,
 }
 
 /// 函数调用描述。
@@ -155,6 +159,8 @@ pub struct LevelConfig {
     /// 单测例指令数上限
     pub max_instructions: u64,
     pub goal: Goal,
+    /// 可选声明式隐藏/随机测例生成规格（由关卡参考解自动充当标准裁判）
+    pub generated: Option<crate::fuzz::GeneratedSpec>,
 }
 
 impl LevelConfig {
@@ -238,7 +244,53 @@ impl LevelConfig {
             }
         };
 
-        Ok(Self { level, language, available_ops, forbidden_regs, max_instructions, goal })
+        let generated = match v.get("generated") {
+            Some(gv) => Some(
+                serde_json::from_value::<crate::fuzz::GeneratedSpec>(gv.clone())
+                    .map_err(|e| format!("关卡 {} 的 generated 配置语法错误：{}", level, e))?,
+            ),
+            None => None,
+        };
+
+        Ok(Self { level, language, available_ops, forbidden_regs, max_instructions, goal, generated })
+    }
+
+    /// 按声明式 `generated` 配置与关卡参考解展开「公开 + 固定种子隐藏基准 + 动态随机抽测」全量测例集。
+    pub fn expand_with_oracle(
+        &self,
+        solution: Option<&str>,
+        dynamic_seed: Option<u64>,
+    ) -> Result<Self, String> {
+        let Some(spec) = &self.generated else {
+            return Ok(self.clone());
+        };
+        let Some(sol) = solution else {
+            return Ok(self.clone());
+        };
+
+        let mut extra = crate::fuzz::synthesize_cases(self, sol, spec, spec.seed, spec.fixed_count, false)?;
+        if let Some(dseed) = dynamic_seed {
+            if spec.random_count > 0 {
+                let mut dyn_cases = crate::fuzz::synthesize_cases(self, sol, spec, dseed, spec.random_count, true)?;
+                extra.append(&mut dyn_cases);
+            }
+        }
+
+        let mut expanded = self.clone();
+        match &mut expanded.goal {
+            Goal::Static { tests } | Goal::Output { tests } => {
+                tests.extend(extra);
+            }
+            Goal::Scripted { .. } => {}
+        }
+        Ok(expanded)
+    }
+
+    /// 本关用于计算 `parSteps` 的固定基准测例总数（公开测例 + 固定种子隐藏测例）。
+    pub fn benchmark_count(&self) -> usize {
+        let base = self.tests().iter().filter(|t| !t.is_random).count();
+        let fixed_gen = self.generated.as_ref().map(|g| g.fixed_count).unwrap_or(0);
+        base + fixed_gen
     }
 
     /// 这个关卡的全部测例（scripted 关卡返回空）。
@@ -356,6 +408,9 @@ fn parse_test_case(
     if let Some(n) = v.get("maxInstructions").and_then(|x| x.as_u64()) {
         tc.max_instructions = Some(n);
     }
+    if let Some(h) = v.get("hidden").and_then(|x| x.as_bool()) {
+        tc.hidden = h;
+    }
 
     let expected = parse_state(v.get("expected")).map_err(|e| format!("关卡 {} 的测例 {}：{}", level, tc.name, e))?;
     tc.expected_regs = expected.regs;
@@ -430,7 +485,12 @@ fn parse_int(v: &Value) -> Result<i64, String> {
         let s = s.trim();
         let (neg, body) = s.strip_prefix('-').map(|b| (true, b)).unwrap_or((false, s));
         let n = if let Some(hex) = body.strip_prefix("0x").or_else(|| body.strip_prefix("0X")) {
-            i64::from_str_radix(hex, 16).map_err(|_| format!("`{}` 不是合法的十六进制数", s))?
+            let parsed = i64::from_str_radix(hex, 16)
+                .map_err(|_| format!("`{}` 不是合法的十六进制数", s))?;
+            if !neg && parsed > i32::MAX as i64 && parsed <= u32::MAX as i64 {
+                return Ok(parsed as i32 as i64);
+            }
+            parsed
         } else {
             body.parse::<i64>().map_err(|_| format!("`{}` 不是整数", s))?
         };

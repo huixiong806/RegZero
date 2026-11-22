@@ -1,7 +1,10 @@
 {
   "level": "1-1",
   "language": "asm",
-  "availableOps": ["add", "ecall"],
+  "availableOps": [
+    "add",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 1000,
   "goal": {
@@ -9,24 +12,80 @@
     "tests": [
       {
         "name": "3 + 5 = 8",
-        "initial": { "regs": { "t0": 3, "t1": 5 } },
-        "expected": { "regs": { "t2": 8 } }
+        "initial": {
+          "regs": {
+            "t0": 3,
+            "t1": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 8
+          }
+        }
       },
       {
         "name": "0 + 0 = 0（零值）",
-        "initial": { "regs": { "t0": 0, "t1": 0 } },
-        "expected": { "regs": { "t2": 0 } }
+        "initial": {
+          "regs": {
+            "t0": 0,
+            "t1": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 0
+          }
+        }
       },
       {
         "name": "2026 + 74 = 2100（较大整数）",
-        "initial": { "regs": { "t0": 2026, "t1": 74 } },
-        "expected": { "regs": { "t2": 2100 } }
+        "initial": {
+          "regs": {
+            "t0": 2026,
+            "t1": 74
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 2100
+          }
+        }
       },
       {
         "name": "-15 + 40 = 25（负数参与加法）",
-        "initial": { "regs": { "t0": -15, "t1": 40 } },
-        "expected": { "regs": { "t2": 25 } }
+        "initial": {
+          "regs": {
+            "t0": -15,
+            "t1": 40
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 25
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10101,
+    "fixedCount": 6,
+    "randomCount": 4,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -200,
+          "max": 200
+        },
+        "t1": {
+          "min": -200,
+          "max": 200
+        }
+      }
+    }
   }
 }

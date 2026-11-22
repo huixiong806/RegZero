@@ -1,0 +1,105 @@
+{
+  "id": "1-16S",
+  "chapter": 1,
+  "order": 16.5,
+  "kind": "challenge",
+  "title": "兔子数列",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-16"
+  ],
+  "parSteps": 960,
+  "concepts": [
+    "fib-perf",
+    "time-complexity"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 中是非负整数 n（F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2)，含 n = 25）",
+    "after": "在性能金牌步数线内高效算出 F(t0) 存入 t1"
+  },
+  "briefing": [
+    {
+      "tag": "硬核支线 · 信标节拍",
+      "text": "深空信标按斐波那契数列 `F(n)` 发射脉冲（测试含 `n = 25`）。如果直接照搬朴素递归，零号机会直接超时过载！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "在性能金牌步数线内高效算出 `F(t0)` 存入 `t1`（`F(0)=0, F(1)=1`）。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "输入 n",
+      "t1": "输出 F(n)",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+"
+    ],
+    "warmupPuzzle": {
+      "prompt": "计算第 t0 个斐波那契数 F(t0) 存入 t1（含 n = 25 测例），冲击性能金牌！",
+      "initial": {
+        "regs": {
+          "t0": 6,
+          "t1": 0,
+          "t2": 1,
+          "t3": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 8
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "不要用双分支递归！用迭代滚动两个寄存器：初值 t1 = 0 (F0), t2 = 1 (F1)，每轮推进一次，循环 n 次后 t1 就是 F(n)！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. t1 = 0, t2 = 1；2. loop: beq t0, zero, done；3. add t3, t1, t2；4. mv t1, t2；5. mv t2, t3；6. addi t0, t0, -1；7. j loop；8. done:。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t1, zero, 0\naddi t2, zero, 1\nloop:\nbeq  t0, zero, done\nadd  t3, t1, t2\nmv   t1, t2\nmv   t2, t3\naddi t0, t0, -1\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-branch"
+  ]
+}

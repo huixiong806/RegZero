@@ -1,0 +1,105 @@
+{
+  "id": "1-17",
+  "chapter": 1,
+  "order": 17,
+  "kind": "lesson",
+  "title": "字符收发室",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-16"
+  ],
+  "concepts": [
+    "mmio",
+    "io-stream"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "输入端口 0xF0000004 提供字符流（读空返回 0）；显示端口在 0xF0000000",
+    "after": "逐字符读入：只把小写字母 a–z 转为大写 A–Z，其他字符原样保留，全部输出到显示端口"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "串口无线电天线展开了！裸机没有专门的键盘或屏幕指令，外设收发口直接挂在两个高内存地址上（MMIO），读写它们就能和外界对话。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "循环读取输入端口字符流直到结束：仅把小写字母转为大写，其余原样保留并输出到显示端口。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "zero"
+    ],
+    "regRoles": {
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "从 0xF0000004 读字符流，只把小写字母 a–z 转为大写，其余字符原样输出到 0xF0000000！",
+      "initial": {
+        "regs": {
+          "t0": 0,
+          "t1": 0,
+          "t2": 0,
+          "t3": 97,
+          "t4": 26,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t3": 97
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "先用 li t0, 0xF0000000 和 li t1, 0xF0000004 装好端口地址。循环 lbu t2, 0(t1)：若 t2 == 0 跳到 done；若 97 <= t2 <= 122 则 t2 -= 32；最后 sb t2, 0(t0) 输出。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "判断小写字母：addi t3, zero, 97; addi t4, zero, 123; blt t2, t3, emit; bge t2, t4, emit; addi t2, t2, -32; emit: sb t2, 0(t0); j loop。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "li   t0, 0xF0000000\nli   t1, 0xF0000004\naddi t3, zero, 97\naddi t4, zero, 123\nloop:\nlbu  t2, 0(t1)\nbeq  t2, zero, done\nblt  t2, t3, emit\nbge  t2, t4, emit\naddi t2, t2, -32\nemit:\nsb   t2, 0(t0)\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-memory"
+  ]
+}

@@ -1,7 +1,10 @@
 {
   "level": "1-2",
   "language": "asm",
-  "availableOps": ["addi", "ecall"],
+  "availableOps": [
+    "addi",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 1000,
   "goal": {
@@ -9,24 +12,72 @@
     "tests": [
       {
         "name": "5 + 7 = 12",
-        "initial": { "regs": { "t0": 5 } },
-        "expected": { "regs": { "t1": 12 } }
+        "initial": {
+          "regs": {
+            "t0": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 12
+          }
+        }
       },
       {
         "name": "0 + 7 = 7（零值）",
-        "initial": { "regs": { "t0": 0 } },
-        "expected": { "regs": { "t1": 7 } }
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 7
+          }
+        }
       },
       {
         "name": "-7 + 7 = 0（正负抵消）",
-        "initial": { "regs": { "t0": -7 } },
-        "expected": { "regs": { "t1": 0 } }
+        "initial": {
+          "regs": {
+            "t0": -7
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0
+          }
+        }
       },
       {
         "name": "-100 + 7 = -93（负数结果）",
-        "initial": { "regs": { "t0": -100 } },
-        "expected": { "regs": { "t1": -93 } }
+        "initial": {
+          "regs": {
+            "t0": -100
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": -93
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10201,
+    "fixedCount": 6,
+    "randomCount": 4,
+    "checkRegs": [
+      "t1"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -200,
+          "max": 200
+        }
+      }
+    }
   }
 }

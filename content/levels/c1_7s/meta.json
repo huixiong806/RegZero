@@ -3,13 +3,19 @@
   "chapter": 1,
   "order": 7.5,
   "kind": "challenge",
-  "title": "支线挑战：更相减损求最大公约数（GCD）",
+  "title": "更相减损",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
-  "prerequisites": ["1-7"],
-  "parInstructions": 9,
-  "concepts": ["gcd", "loop-invariant", "multi-branch"],
+  "prerequisites": [
+    "1-7"
+  ],
+  "parSteps": 400,
+  "concepts": [
+    "gcd",
+    "loop-invariant",
+    "multi-branch"
+  ],
   "ui": {
     "immediatePort": true,
     "jumpRail": true,
@@ -21,36 +27,47 @@
   },
   "briefing": [
     {
-      "tag": "硬核支线",
-      "text": "本关禁用了乘除与取余，只能使用加减与跳转指令。"
-    },
-    {
-      "tag": "经典算法",
-      "text": "「更相减损术」：只要两个正整数不相等，就反复用大数减去小数，直到两数相等——那就是它们的**最大公约数**。"
+      "tag": "紧急支线 · 时钟失步",
+      "text": "两套辅助时钟源频率不同步，且该通道没有接通乘除法器——只能靠加减与循环算出最大公约数来对齐节拍。"
     },
     {
       "tag": "通关目标",
-      "text": "求出 `t0` 与 `t1` 的最大公约数，存入 `t2`。"
+      "text": "禁用乘除与取余，求出正整数 `t0` 与 `t1` 的最大公约数存入 `t2`。"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "alu"],
-    "recordToAsm": true,
-    "focusRegs": ["t0", "t1", "t2"],
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2"
+    ],
     "regRoles": {
-      "t0": "正整数 A",
-      "t1": "正整数 B",
-      "t2": "最大公约数"
+      "t0": "输入 A",
+      "t1": "输入 B",
+      "t2": "公约数"
     },
-    "aluOps": ["-"],
+    "aluOps": [
+      "-"
+    ],
     "warmupPuzzle": {
-      "prompt": "反复用较大的数减去较小的数：(12, 18) → (12, 6) → (6, 6)，两数相等时即得最大公约数！",
+      "prompt": "禁用乘除与取余！仅靠加减法和循环，求出 t0 与 t1 的最大公约数存入 t2。",
       "initial": {
-        "regs": { "t0": 12, "t1": 18, "t2": 0 }
+        "regs": {
+          "t0": 12,
+          "t1": 18,
+          "t2": 0
+        }
       },
       "goal": {
-        "regs": { "t2": 6 }
+        "regs": {
+          "t2": 6
+        }
       }
     }
   },
@@ -59,9 +76,23 @@
     "readonlySuffix": 1
   },
   "hints": [
-    { "level": 1, "type": "diagram", "content": "欧几里得更相减损法：若 a > b，则 gcd(a, b) = gcd(a - b, b)；反复相减直到 a == b，结果就是最大公约数。" },
-    { "level": 2, "type": "steps", "content": "1. loop: 若 t0 < t1 跳去 t1 = t1 - t0；2. 若 t1 < t0 跳去 t0 = t0 - t1；3. 都不成立说明 t0 == t1，把 t0 放进 t2 跳到 done。" },
-    { "level": 3, "type": "snippet", "content": "loop:\nblt t0, t1, b_big\nblt t1, t0, a_big\nmv  t2, t0\nj   done\na_big:\nsub t0, t0, t1\nj   loop\nb_big:\nsub t1, t1, t0\nj   loop\ndone:" }
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "欧几里得更相减损法：若 a > b，则 gcd(a, b) = gcd(a - b, b)；反复相减直到 a == b，结果就是最大公约数。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. loop: 若 t0 < t1 跳去 t1 = t1 - t0；2. 若 t1 < t0 跳去 t0 = t0 - t1；3. 都不成立说明 t0 == t1，把 t0 放进 t2 跳到 done。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "loop:\nblt t0, t1, b_big\nblt t1, t0, a_big\nmv  t2, t0\nj   done\na_big:\nsub t0, t0, t1\nj   loop\nb_big:\nsub t1, t1, t0\nj   loop\ndone:"
+    }
   ],
-  "wikiRefs": ["rv32-branch"]
+  "wikiRefs": [
+    "rv32-branch"
+  ]
 }

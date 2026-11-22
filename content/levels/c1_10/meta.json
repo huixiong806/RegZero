@@ -1,0 +1,106 @@
+{
+  "id": "1-10",
+  "chapter": 1,
+  "order": 10,
+  "kind": "lesson",
+  "title": "大写工坊",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-9"
+  ],
+  "concepts": [
+    "byte",
+    "lbu",
+    "sb",
+    "ascii",
+    "beq",
+    "bne"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 指向内存中一串以 0 结尾的小写英文字母（每字 1 字节）",
+    "after": "将所有小写字母原地转为大写（-32），并把字符总长度存入 t1"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "老式状态屏终于亮起，但它只认**大写英文字母**！内存里那段以 `0` 结尾的小写提示符需要现场转码。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "把 `t0` 处的小写字符串原地转为大写，并将字符总长度存入 `t1`。右侧内存栏可切到 `字节/字符(ASCII)` 直接看字母。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "首地址",
+      "t1": "长度",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "单步调试时把右侧内存监视器切到「字节/字符(ASCII)」，亲眼看着 hello 逐个字母变成 HELLO！",
+      "initial": {
+        "regs": {
+          "t0": 4096,
+          "t1": 0,
+          "t2": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 5
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "用 lbu 读出 1 字节：如果是 0（beq t2, zero, done）就停；否则减 32 变大写，用 sb 写回原处，再把地址 +1、长度 +1。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. addi t1, zero, 0；2. loop: lbu t2, 0(t0)；3. beq t2, zero, done；4. addi t2, t2, -32；5. sb t2, 0(t0)；6. addi t0, t0, 1；7. addi t1, t1, 1；8. j loop；9. done:。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t1, zero, 0\nloop:\nlbu  t2, 0(t0)\nbeq  t2, zero, done\naddi t2, t2, -32\nsb   t2, 0(t0)\naddi t0, t0, 1\naddi t1, t1, 1\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-memory",
+    "rv32-branch"
+  ]
+}

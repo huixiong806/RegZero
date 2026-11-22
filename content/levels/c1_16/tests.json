@@ -1,0 +1,97 @@
+{
+  "level": "1-16",
+  "language": "asm",
+  "availableOps": [
+    "jal",
+    "ret",
+    "jalr",
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mul",
+    "mv",
+    "blt",
+    "bge",
+    "beq",
+    "bne",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "5! = 120",
+        "initial": {
+          "regs": {
+            "t0": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 120
+          }
+        }
+      },
+      {
+        "name": "0! = 1（边界）",
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 1
+          }
+        }
+      },
+      {
+        "name": "1! = 1（边界）",
+        "initial": {
+          "regs": {
+            "t0": 1
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 1
+          }
+        }
+      },
+      {
+        "name": "10! = 3628800",
+        "initial": {
+          "regs": {
+            "t0": 10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 3628800
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11601,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 0,
+          "max": 12
+        }
+      }
+    }
+  }
+}

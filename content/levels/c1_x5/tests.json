@@ -1,0 +1,101 @@
+{
+  "level": "1-X5",
+  "language": "asm",
+  "availableOps": [],
+  "forbiddenRegs": [],
+  "maxInstructions": 20000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "单点种子 0x00000001 演化 4 代 → 0x0000001F",
+        "initial": {
+          "regs": {
+            "t0": 1,
+            "t1": 4
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": "0x0000001F"
+          }
+        }
+      },
+      {
+        "name": "单点种子 0x00000001 演化 10 代 → 0x0000070D",
+        "initial": {
+          "regs": {
+            "t0": 1,
+            "t1": 10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": "0x0000070D"
+          }
+        }
+      },
+      {
+        "name": "多波碰撞 0x00010101 演化 15 代 → 0xD67D7D7D",
+        "initial": {
+          "regs": {
+            "t0": "0x00010101",
+            "t1": 15
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": "0xD67D7D7D"
+          }
+        }
+      },
+      {
+        "name": "边界测试 0x80000001 演化 20 代 → 0x801F1B93",
+        "initial": {
+          "regs": {
+            "t0": "0x80000001",
+            "t1": 20
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": "0x801F1B93"
+          }
+        }
+      },
+      {
+        "name": "0 代边界：原样保持",
+        "initial": {
+          "regs": {
+            "t0": "0x12345678",
+            "t1": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": "0x12345678"
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 19501,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "u32Bits": true
+        },
+        "t1": {
+          "min": 1,
+          "max": 20
+        }
+      }
+    }
+  }
+}

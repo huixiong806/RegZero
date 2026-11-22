@@ -124,12 +124,24 @@ export function LevelBriefingModal({
           </span>
         </div>
 
-        {/* 主体：大字号、极简 1~2 句话 */}
+        {/* 主体：大字号、支持换行与短清单 */}
         <div className="min-h-[148px] px-6 py-7">
           <div className="text-xs font-medium text-slate-500">{title}</div>
-          <p className="mt-3 text-base leading-8 text-slate-100 sm:text-[17px]">
-            {renderInline(current.text)}
-          </p>
+          <div className="mt-3 space-y-1.5 text-base leading-8 text-slate-100 sm:text-[17px]">
+            {current.text.split('\n').map((line, lineIdx) => {
+              const trimmed = line.trim();
+              if (!trimmed) return null;
+              if (trimmed.startsWith('- ')) {
+                return (
+                  <div key={lineIdx} className="flex items-start gap-2 text-[15px] leading-7">
+                    <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />
+                    <span className="min-w-0">{renderInline(trimmed.slice(2))}</span>
+                  </div>
+                );
+              }
+              return <p key={lineIdx}>{renderInline(trimmed)}</p>;
+            })}
+          </div>
         </div>
 
         {/* 进度圆点 + 翻页/收起控制 */}

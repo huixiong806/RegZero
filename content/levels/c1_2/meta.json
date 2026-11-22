@@ -3,12 +3,17 @@
   "chapter": 1,
   "order": 2,
   "kind": "lesson",
-  "title": "引入常量：addi",
+  "title": "凭空加七",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
-  "prerequisites": ["1-1"],
-  "concepts": ["immediate", "addi"],
+  "prerequisites": [
+    "1-1"
+  ],
+  "concepts": [
+    "immediate",
+    "addi"
+  ],
   "ui": {
     "immediatePort": true
   },
@@ -18,40 +23,58 @@
   },
   "briefing": [
     {
-      "tag": "遇到问题",
-      "text": "这一关要把 `t0` 加上 `7`，但**没有任何寄存器里存着 7**。"
+      "tag": "任务背景",
+      "text": "主电源电压偏低，温度传感器读数少了 7 格，需要把 `t0` 补上 `+7`——但此刻**没有任何寄存器里存着 7**。"
     },
     {
-      "tag": "新工具",
-      "text": "直接写进指令里的数字叫做**常量**（也叫立即数），用 `addi` 就能把「寄存器 + 常量」的结果存进目标寄存器。"
+      "tag": "新工具：立即数",
+      "text": "直接写进指令里的固定数字叫做**立即数**。用 `addi` 就能把「寄存器 + 立即数」的结果直接存进目标寄存器。"
     },
     {
       "tag": "通关目标",
-      "text": "计算 `t0 + 7`，将结果存入 `t1`。"
+      "text": "计算校准值 `t0 + 7`，将结果存入 `t1`。"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
     "focusWarmupFirst": true,
-    "modules": ["regs", "constants", "alu"],
+    "modules": [
+      "regs",
+      "constants",
+      "alu"
+    ],
     "recordToAsm": true,
-    "focusRegs": ["t0", "t1"],
+    "focusRegs": [
+      "t0",
+      "t1"
+    ],
     "regRoles": {
       "t0": "输入",
-      "t1": "结果"
+      "t1": "输出"
     },
     "constantCards": [
-      { "label": "7", "value": 7, "kind": "immediate" }
+      {
+        "label": "7",
+        "value": 7,
+        "kind": "immediate"
+      }
     ],
-    "aluOps": ["+"],
+    "aluOps": [
+      "+"
+    ],
     "allowCopy": false,
     "warmupPuzzle": {
       "prompt": "把 t0(5) 放入左输入槽，把常量卡 7 放入右输入槽，目标选 t1，点击「执行」。",
       "initial": {
-        "regs": { "t0": 5, "t1": 0 }
+        "regs": {
+          "t0": 5,
+          "t1": 0
+        }
       },
       "goal": {
-        "regs": { "t1": 12 }
+        "regs": {
+          "t1": 12
+        }
       }
     }
   },
@@ -60,9 +83,24 @@
     "readonlySuffix": 1
   },
   "hints": [
-    { "level": 1, "type": "diagram", "content": "addi 末尾的 i 代表 immediate（立即数），第三个位置直接写固定整数 7。" },
-    { "level": 2, "type": "steps", "content": "目标填 t1，源寄存器填 t0，常量填 7。" },
-    { "level": 3, "type": "snippet", "content": "addi t1, t0, 7" }
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "addi 末尾的 i 代表 immediate（立即数），第三个位置直接写固定整数 7。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "目标填 t1，源寄存器填 t0，常量填 7。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t1, t0, 7"
+    }
   ],
-  "wikiRefs": ["rv32-registers", "rv32-arithmetic"]
+  "wikiRefs": [
+    "rv32-registers",
+    "rv32-arithmetic"
+  ]
 }

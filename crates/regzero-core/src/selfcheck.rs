@@ -18,7 +18,9 @@ pub fn check_all() -> Result<String, String> {
 
     for id in &ids {
         match store.self_check(id) {
-            Ok(Verdict { passed: true, summary, .. }) => ok.push(format!("{} ✓ {}", id, summary)),
+            Ok(Verdict { passed: true, summary, total_steps, .. }) => {
+                ok.push(format!("{} ✓ {}（{} 步）", id, summary, total_steps))
+            }
             Ok(v) => bad.push(format!("{} ✗ {}", id, v.summary)),
             Err(e) => {
                 if e.contains("没有参考解") {
@@ -127,7 +129,7 @@ fn every_level_page_and_test_config_are_consistent() {
                     }
                 }
 
-                // 校验 Par 指令数：参考解必须满足 <= parInstructions
+                // 校验静态 Par 指令数：参考解必须满足 <= parInstructions
                 if let (Some(par), Some(sol)) = (meta.par_instructions, &bundle.solution) {
                     match crate::runner::Runner::new(bundle.config.clone(), sol) {
                         Ok(runner) => {
@@ -140,6 +142,24 @@ fn every_level_page_and_test_config_are_consistent() {
                             }
                         }
                         Err(e) => problems.push(format!("{}：参考解编译失败：{:?}", id, e)),
+                    }
+                }
+
+                // 校验动态性能金牌目标：参考解在完整固定基准集上的运行总步数必须满足 <= parSteps
+                if let (Some(par_s), Some(sol)) = (meta.par_steps, &bundle.solution) {
+                    match bundle.config.expand_with_oracle(Some(sol), None) {
+                        Ok(expanded) => {
+                            let v = crate::judge(&expanded, sol);
+                            if !v.passed {
+                                problems.push(format!("{}：参考解未通过判定：{}", id, v.summary));
+                            } else if v.total_steps > par_s {
+                                problems.push(format!(
+                                    "{}：参考解在 {} 组基准测例中共执行 {} 步，超过了性能金牌目标 parSteps = {}",
+                                    id, v.benchmark_count, v.total_steps, par_s
+                                ));
+                            }
+                        }
+                        Err(e) => problems.push(format!("{}：展开生成测例失败：{}", id, e)),
                     }
                 }
 

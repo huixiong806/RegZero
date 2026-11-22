@@ -153,6 +153,8 @@ export interface LevelUiConfig {
   regXName?: boolean;
   allRegsToggle?: boolean;
   hexToggle?: boolean;
+  binToggle?: boolean;
+  pcAddress?: boolean;
   untrackedRegs?: boolean;
   ecallSuffix?: boolean;
 }
@@ -168,6 +170,7 @@ export interface LevelMeta {
   language: Language;
   prerequisites: string[];
   parInstructions?: number;
+  parSteps?: number;
   concepts: string[];
   ui?: LevelUiConfig;
   goalSummary: GoalSummary;
@@ -190,10 +193,13 @@ export interface LevelSummary {
   prerequisites: string[];
   concepts: string[];
   parInstructions?: number;
+  parSteps?: number;
   passed: boolean;
   unlocked: boolean;
   attempts: number;
   bestScore?: number;
+  metPar?: boolean;
+  bestSteps?: number;
 }
 
 export interface TestCasePreview {
@@ -214,6 +220,7 @@ export interface LevelPayload {
   availableOps: string[];
   forbiddenRegs: string[];
   testsPreview: TestCasePreview[];
+  benchmarkCount: number;
   solution?: string;
 }
 
@@ -279,6 +286,9 @@ export interface FailureDto {
 export interface TestVerdictDto {
   name: string;
   passed: boolean;
+  steps: number;
+  hidden?: boolean;
+  isRandom?: boolean;
   detail: string;
   diffs: DiffDto[];
   actualOutput?: string;
@@ -297,7 +307,13 @@ export interface SubmitDto {
   score: number;
   instructionCount?: number;
   parInstructions?: number;
+  totalSteps: number;
+  benchmarkCount: number;
+  parSteps?: number;
   metPar: boolean;
+  hiddenPassed: number;
+  hiddenTotal: number;
+  dynamicSeed?: number;
   summary: string;
   tests: TestVerdictDto[];
   errors: ErrorDto[];
@@ -349,6 +365,7 @@ export interface LevelProgressRecord {
   attempts: number;
   bestScore?: number;
   metPar?: boolean;
+  bestSteps?: number;
 }
 
 export interface UserProgress {

@@ -1,0 +1,119 @@
+{
+  "id": "1-14",
+  "chapter": 1,
+  "order": 14,
+  "kind": "lesson",
+  "title": "有去有回",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-13"
+  ],
+  "concepts": [
+    "program-as-data",
+    "pc-address",
+    "function",
+    "jal",
+    "ret",
+    "ra",
+    "a0",
+    "cpu-stages"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "pcAddress": true,
+    "pipelineStages": true,
+    "allRegsToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 与 t1 中是两个有符号整数",
+    "after": "编写可复用子程序 abs_val（参数与返回值均在 a0），调用两次算出 t2 = |t0| + |t1|"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "双轴机械臂分别偏离零点 `t0` 与 `t1` 格，需要各算一次绝对值再相加——与其把同样逻辑抄两遍，不如让零号机学会「调用子程序」！从本关起，你还能在内存里亲眼看到自己的指令机器码。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "编写可复用子程序 `abs_val`（参数与返回值均在 `a0`），调用两次算出 `t2 = |t0| + |t1|`。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "a0",
+      "ra",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "输入 A",
+      "t1": "输入 B",
+      "t2": "输出",
+      "a0": "参/返",
+      "ra": "返回址",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "单步调试时盯紧顶栏的十六进制 PC 和 ra 寄存器：执行 jal ra, abs_val 瞬间，ra 立刻记下了下一条指令的准确内存地址！",
+      "initial": {
+        "regs": {
+          "t0": -7,
+          "t1": 5,
+          "t2": 0,
+          "a0": 0,
+          "ra": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t2": 12
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "结构分两段：上方主程序负责把 t0 放进 a0 → jal ra, abs_val → 暂存结果 → 把 t1 放进 a0 → jal ra, abs_val → 相加存入 t2 → j done；下方写 abs_val: ... ret；最底放 done:。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "abs_val 写法：bge a0, zero, abs_done；sub a0, zero, a0；abs_done: ret。主程序第一次调用后把 a0 存进 t2，第二次调用后 add t2, t2, a0，最后 j done。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "mv   a0, t0\njal  ra, abs_val\nmv   t2, a0\nmv   a0, t1\njal  ra, abs_val\nadd  t2, t2, a0\nj    done\n\nabs_val:\nbge  a0, zero, abs_done\nsub  a0, zero, a0\nabs_done:\nret\n\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-registers"
+  ]
+}

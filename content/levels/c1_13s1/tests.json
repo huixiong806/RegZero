@@ -1,0 +1,117 @@
+{
+  "level": "1-13S1",
+  "language": "asm",
+  "availableOps": [
+    "and",
+    "andi",
+    "or",
+    "ori",
+    "xor",
+    "xori",
+    "slli",
+    "srli",
+    "srai",
+    "li",
+    "lui",
+    "add",
+    "addi",
+    "sub",
+    "mul",
+    "mv",
+    "beq",
+    "bne",
+    "blt",
+    "bge",
+    "bltu",
+    "bgeu",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "t0 = 0x80000001（只有头尾 2 个 1）",
+        "initial": {
+          "regs": {
+            "t0": "0x80000001"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 2
+          }
+        }
+      },
+      {
+        "name": "t0 = 0x10101010（4 个 1）",
+        "initial": {
+          "regs": {
+            "t0": "0x10101010"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 4
+          }
+        }
+      },
+      {
+        "name": "t0 = 0x0F0F0001（9 个 1）",
+        "initial": {
+          "regs": {
+            "t0": "0x0F0F0001"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 9
+          }
+        }
+      },
+      {
+        "name": "t0 = 0x55555555（间隔 16 个 1）",
+        "initial": {
+          "regs": {
+            "t0": "0x55555555"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 16
+          }
+        }
+      },
+      {
+        "name": "t0 = 0 边界（0 个 1）",
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11331,
+    "fixedCount": 10,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "u32Bits": true
+        }
+      }
+    }
+  }
+}

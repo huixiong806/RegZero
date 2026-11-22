@@ -1,0 +1,108 @@
+{
+  "topic": "rv32-memory",
+  "title": "内存、地址与 ASCII 编码",
+  "order": 4,
+  "unlockAny": ["memory", "lw", "sw", "lbu", "sb"],
+  "summary": "内存是按字节编号的连续大仓库。每个 32 位整数占 4 个字节，每个 ASCII 英文字符占 1 个字节。",
+  "sections": [
+    {
+      "id": "mem-ops",
+      "heading": "已解锁的访存指令",
+      "unlockAny": ["lw", "sw", "lbu", "sb"],
+      "kind": "table",
+      "columns": [
+        { "id": "op", "label": "指令", "unlockAny": [] },
+        { "id": "syntax", "label": "写法", "unlockAny": [] },
+        { "id": "width", "label": "宽度与步长", "unlockAny": [] },
+        { "id": "meaning", "label": "效果", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "lw",
+          "unlockAny": ["lw"],
+          "cells": {
+            "op": "`lw`",
+            "syntax": "`lw rd, 偏移(基址)`",
+            "width": "4 字节 (`+4`)",
+            "meaning": "从内存读出一个 32 位整数到 `rd`"
+          }
+        },
+        {
+          "id": "sw",
+          "unlockAny": ["sw"],
+          "cells": {
+            "op": "`sw`",
+            "syntax": "`sw rs2, 偏移(基址)`",
+            "width": "4 字节 (`+4`)",
+            "meaning": "把 `rs2` 的 32 位整数写进内存"
+          }
+        },
+        {
+          "id": "lbu",
+          "unlockAny": ["lbu"],
+          "cells": {
+            "op": "`lbu`",
+            "syntax": "`lbu rd, 偏移(基址)`",
+            "width": "1 字节 (`+1`)",
+            "meaning": "从内存读出 1 个无符号字节（`0–255`）到 `rd`"
+          }
+        },
+        {
+          "id": "sb",
+          "unlockAny": ["sb"],
+          "cells": {
+            "op": "`sb`",
+            "syntax": "`sb rs2, 偏移(基址)`",
+            "width": "1 字节 (`+1`)",
+            "meaning": "把 `rs2` 的最低 1 字节写进内存"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hex-guide",
+      "heading": "十六进制地址速查",
+      "unlockAny": ["hex"],
+      "kind": "markdown",
+      "markdown": "内存地址通常用 `0x` 开头的十六进制表示（逢 16 进 1：`0–9`, `A=10`, `B=11`, `C=12`, `D=13`, `E=14`, `F=15`）。\n\n- `0x0000`：代码区（程序指令本身存放的位置）\n- `0x1000`：默认数据区（`4096`）\n- `0xF000`：栈顶默认起点（向下增长）"
+    },
+    {
+      "id": "ascii-guide",
+      "heading": "常用 ASCII 字符编码",
+      "unlockAny": ["ascii"],
+      "kind": "table",
+      "columns": [
+        { "id": "char", "label": "字符范围", "unlockAny": [] },
+        { "id": "dec", "label": "十进制编号", "unlockAny": [] },
+        { "id": "note", "label": "速记规律", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "nul",
+          "unlockAny": ["ascii"],
+          "cells": { "char": "结束符 `\\0`", "dec": "`0`", "note": "标记字符串结束" }
+        },
+        {
+          "id": "space",
+          "unlockAny": ["ascii"],
+          "cells": { "char": "空格 `' '` / 换行 `'\\n'`", "dec": "`32` / `10`", "note": "常用分隔符" }
+        },
+        {
+          "id": "digits",
+          "unlockAny": ["ascii"],
+          "cells": { "char": "`'0'`–`'9'`", "dec": "`48`–`57`", "note": "减去 `48` 即得数字 `0`–`9`" }
+        },
+        {
+          "id": "upper",
+          "unlockAny": ["ascii"],
+          "cells": { "char": "`'A'`–`'Z'`", "dec": "`65`–`90`", "note": "比对应小写正好小 `32`" }
+        },
+        {
+          "id": "lower",
+          "unlockAny": ["ascii"],
+          "cells": { "char": "`'a'`–`'z'`", "dec": "`97`–`122`", "note": "减 `32` 即变大写" }
+        }
+      ]
+    }
+  ]
+}

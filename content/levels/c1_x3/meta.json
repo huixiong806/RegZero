@@ -1,0 +1,112 @@
+{
+  "id": "1-X3",
+  "chapter": 1,
+  "order": 19.3,
+  "kind": "challenge",
+  "title": "折半寻踪",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-18"
+  ],
+  "parSteps": 660,
+  "concepts": [
+    "binary-search"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "allRegsToggle": true,
+    "ecallSuffix": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 是严格升序排列的数组首地址，t1 是长度 n，t2 是目标值 target",
+    "after": "在极少步数内找到 target 的下标（0..n-1）存入 t3；若不存在则存 -1，以 a7 = 0 退出"
+  },
+  "briefing": [
+    {
+      "tag": "终局委托 · 星表检索",
+      "text": "航图数据库里存着一段严格升序的星标编号，导航仪要求在极严步数上限内定位目标星标 `target`。"
+    },
+    {
+      "tag": "挑战目标",
+      "text": "`t0` 为升序数组首地址，`t1` 为长度 `n`，`t2` 为目标值。找到下标存入 `t3`（不存在存 `-1`），以 `a7 = 0` 退出。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "t5",
+      "t6"
+    ],
+    "regRoles": {
+      "t0": "首地址",
+      "t1": "长度 n",
+      "t2": "目标",
+      "t3": "下标"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "在严格升序数组 t0 (长 t1) 中高效查找目标 t2，下标存入 t3（不存在存 -1），冲击性能金牌！",
+      "initial": {
+        "regs": {
+          "t0": 4096,
+          "t1": 16,
+          "t2": 47,
+          "t3": -1,
+          "t4": 0,
+          "t5": 15,
+          "t6": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t3": 11
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 0
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "初值 lo = 0, hi = n - 1, res = -1。只要 lo <= hi（blt hi, lo, done）：mid = (lo + hi) >> 1；读 val = mem[base + (mid << 2)]；若 val == target 返回 mid；若 val < target 则 lo = mid + 1；否则 hi = mid - 1。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "注意用 slli 算 mid * 4、srli 算 (lo + hi) / 2，比 mul/div 更快更干净；最后别忘了 a7 = 0; ecall。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t3, zero, -1\naddi t4, zero, 0\naddi t5, t1, -1\nloop:\nblt  t5, t4, done\nadd  t6, t4, t5\nsrli t6, t6, 1\nslli a0, t6, 2\nadd  a0, t0, a0\nlw   a1, 0(a0)\nbeq  a1, t2, found\nblt  a1, t2, go_right\naddi t5, t6, -1\nj    loop\ngo_right:\naddi t4, t6, 1\nj    loop\nfound:\nmv   t3, t6\ndone:\naddi a7, zero, 0\necall"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-memory",
+    "rv32-bits"
+  ]
+}

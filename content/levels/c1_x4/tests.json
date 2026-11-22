@@ -1,0 +1,76 @@
+{
+  "level": "1-X4",
+  "language": "asm",
+  "availableOps": [],
+  "forbiddenRegs": [],
+  "maxInstructions": 20000,
+  "goal": {
+    "type": "output",
+    "tests": [
+      {
+        "name": "混合运算：12 3 4 + * 5 - → 79",
+        "input": {
+          "text": "12 3 4 + * 5 -"
+        },
+        "output": {
+          "text": "79"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "减法方向检验：10 3 - 2 5 - * → -21",
+        "input": {
+          "text": "10 3 - 2 5 - *"
+        },
+        "output": {
+          "text": "-21"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "深层栈嵌套：1 2 3 4 5 + + + + → 15",
+        "input": {
+          "text": "1 2 3 4 5 + + + +"
+        },
+        "output": {
+          "text": "15"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "单数字边界：42 → 42",
+        "input": {
+          "text": "42"
+        },
+        "output": {
+          "text": "42"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 19401,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkOutput": true,
+    "checkExit": true,
+    "inputs": {
+      "textStream": {
+        "kind": "rpn",
+        "len": [
+          2,
+          6
+        ]
+      }
+    }
+  }
+}

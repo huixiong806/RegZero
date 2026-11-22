@@ -1,7 +1,13 @@
 {
   "level": "1-4",
   "language": "asm",
-  "availableOps": ["add", "addi", "sub", "mv", "ecall"],
+  "availableOps": [
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 1000,
   "goal": {
@@ -9,24 +15,90 @@
     "tests": [
       {
         "name": "3 × 4 - 3 + 5 = 14",
-        "initial": { "regs": { "t0": 4, "t1": 3 } },
-        "expected": { "regs": { "t0": 4, "t1": 3, "t2": 14 } }
+        "initial": {
+          "regs": {
+            "t0": 4,
+            "t1": 3
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 4,
+            "t1": 3,
+            "t2": 14
+          }
+        }
       },
       {
         "name": "3 × 0 - 0 + 5 = 5（零值）",
-        "initial": { "regs": { "t0": 0, "t1": 0 } },
-        "expected": { "regs": { "t0": 0, "t1": 0, "t2": 5 } }
+        "initial": {
+          "regs": {
+            "t0": 0,
+            "t1": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 0,
+            "t1": 0,
+            "t2": 5
+          }
+        }
       },
       {
         "name": "3 × (-2) - 4 + 5 = -5（负数输入）",
-        "initial": { "regs": { "t0": -2, "t1": 4 } },
-        "expected": { "regs": { "t0": -2, "t1": 4, "t2": -5 } }
+        "initial": {
+          "regs": {
+            "t0": -2,
+            "t1": 4
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": -2,
+            "t1": 4,
+            "t2": -5
+          }
+        }
       },
       {
         "name": "3 × 10 - (-5) + 5 = 40（减负数）",
-        "initial": { "regs": { "t0": 10, "t1": -5 } },
-        "expected": { "regs": { "t0": 10, "t1": -5, "t2": 40 } }
+        "initial": {
+          "regs": {
+            "t0": 10,
+            "t1": -5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 10,
+            "t1": -5,
+            "t2": 40
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10401,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t0",
+      "t1",
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -200,
+          "max": 200
+        },
+        "t1": {
+          "min": -200,
+          "max": 200
+        }
+      }
+    }
   }
 }

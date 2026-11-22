@@ -6,6 +6,7 @@
 pub mod config;
 pub mod dto;
 pub mod embedded;
+pub mod fuzz;
 pub mod judge;
 pub mod levels;
 pub mod progress;
@@ -15,6 +16,7 @@ pub mod runner;
 mod selfcheck;
 
 pub use config::{CallSpec, Goal, Language, LevelConfig, MemExpect, TestCase};
+pub use fuzz::GeneratedSpec;
 pub use judge::{judge, Diff, FailureReason, FailureSite, TestVerdict, Verdict};
 pub use levels::{
     EditorConfig, GoalSummary, HintItem, LevelBundle, LevelError, LevelKind, LevelMeta,

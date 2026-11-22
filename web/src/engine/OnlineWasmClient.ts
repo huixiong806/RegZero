@@ -110,12 +110,17 @@ export class OnlineWasmClient implements EngineClient {
     return this.call<MachineSnapshot>('runSandbox', { language, code, inputText });
   }
 
-  submitCode(levelId: string, code: string): Promise<SubmitDto> {
-    return this.call<SubmitDto>('submitCode', { levelId, code });
+  submitCode(levelId: string, code: string, dynamicSeed?: number): Promise<SubmitDto> {
+    return this.call<SubmitDto>('submitCode', { levelId, code, dynamicSeed });
   }
 
-  debugStart(levelId: string, code: string, caseIndex?: number): Promise<MachineSnapshot> {
-    return this.call<MachineSnapshot>('debugStart', { levelId, code, caseIndex });
+  debugStart(
+    levelId: string,
+    code: string,
+    caseIndex?: number,
+    dynamicSeed?: number,
+  ): Promise<MachineSnapshot> {
+    return this.call<MachineSnapshot>('debugStart', { levelId, code, caseIndex, dynamicSeed });
   }
 
   debugStartSandbox(language: Language, code: string, inputText = ''): Promise<MachineSnapshot> {

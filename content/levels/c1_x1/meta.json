@@ -1,0 +1,108 @@
+{
+  "id": "1-X1",
+  "chapter": 1,
+  "order": 19.1,
+  "kind": "challenge",
+  "title": "压缩电报",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-18"
+  ],
+  "parSteps": 1950,
+  "concepts": [
+    "rle-decode",
+    "state-machine"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "allRegsToggle": true,
+    "ecallSuffix": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "输入流为压缩电报文本（如 \"3A2B12C\"：十进制正整数次数 + 单个非数字字符）",
+    "after": "将每个字符按前面标注的次数重复输出到显示端口（如 \"AAABBCCCCCCCCCCCC\"）"
+  },
+  "briefing": [
+    {
+      "tag": "终局委托 · 压缩电报",
+      "text": "地面站发来一条行程压缩电报（如 `3A2B12C`），需要零号机现场解码还原并逐字发往显示端口。"
+    },
+    {
+      "tag": "挑战目标",
+      "text": "解析每组「十进制正整数次数 + 单个非数字字符」，重复输出对应次数（支持多位数次数），向性能金牌发起挑战！"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "zero"
+    ],
+    "regRoles": {
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+",
+      "*"
+    ],
+    "warmupPuzzle": {
+      "prompt": "解码输入中的游程编码（次数可能是多位数，如 12C）并输出到终端，冲击性能金牌！",
+      "initial": {
+        "regs": {
+          "t0": 0,
+          "t1": 0,
+          "t2": 0,
+          "t3": 0,
+          "t4": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t3": 0
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 0
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "维护一个计数器 count = 0。循环从 0xF0000004 读字符 c：c == 0 退出；如果 '0' <= c <= '9'，count = count * 10 + (c - 48)；否则循环 count 次向 0xF0000000 输出 c，然后 count = 0。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "快速判断数字：addi t4, t2, -48；addi t5, zero, 10；bgeu t4, t5, emit_char！同时用 (count << 3) + (count << 1) 替代乘 10 也很顺手，或直接用 mul。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "li   t0, 0xF0000000\nli   t1, 0xF0000004\naddi t3, zero, 0\naddi t5, zero, 10\nread_loop:\nlbu  t2, 0(t1)\nbeq  t2, zero, done\naddi t4, t2, -48\nbgeu t4, t5, emit_loop\nmul  t3, t3, t5\nadd  t3, t3, t4\nj    read_loop\nemit_loop:\nbeq  t3, zero, read_loop\nsb   t2, 0(t0)\naddi t3, t3, -1\nj    emit_loop\ndone:\naddi a0, zero, 0\naddi a7, zero, 0\necall"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-memory"
+  ]
+}

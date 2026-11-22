@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import {
   ArrowRight,
   Check,
@@ -6,6 +13,7 @@ import {
   Hand,
   Play,
   RotateCcw,
+  Square,
   Target,
   Terminal,
   Undo2,
@@ -38,11 +46,15 @@ import {
   type CpuPulseEvent,
   type LiveCpuPlayback,
 } from './pulseModel';
+import { formatDatapathValue, type RegRadix } from './radixFormat';
 
 export interface ManualCpuSandboxProps {
   config: ManualCpuSandboxConfig;
   showRegXName?: boolean;
   allowExpandAllRegs?: boolean;
+  showHexToggle?: boolean;
+  showBinToggle?: boolean;
+  showPcAddress?: boolean;
   immediateUnlocked?: boolean;
   showJumpRail?: boolean;
   memoryUnlocked?: boolean;
@@ -56,6 +68,9 @@ export function ManualCpuSandbox({
   config,
   showRegXName = false,
   allowExpandAllRegs = false,
+  showHexToggle = false,
+  showBinToggle = false,
+  showPcAddress = false,
   immediateUnlocked = false,
   showJumpRail = false,
   memoryUnlocked = false,
@@ -79,6 +94,32 @@ export function ManualCpuSandbox({
   const [demoPlaying, setDemoPlaying] = useState(false);
   const [demoSpeed, setDemoSpeed] = useState<PlaybackSpeed>(1);
   const [passedDemoCases, setPassedDemoCases] = useState<Set<number>>(() => new Set());
+  const [radix, setRadix] = useState<RegRadix>('dec');
+
+  // 实时测量中轴 6 处几何锚点，保证左写回轨、右存内存内轨与右跳转外轨在任何布局下像素级闭合
+  const stageBodyRef = useRef<HTMLDivElement | null>(null);
+  const pcBarRef = useRef<HTMLDivElement | null>(null);
+  const regBoxRef = useRef<HTMLDivElement | null>(null);
+  const busRef = useRef<HTMLDivElement | null>(null);
+  const aluBoxRef = useRef<HTMLDivElement | null>(null);
+  const memStageRef = useRef<HTMLDivElement | null>(null);
+  const wbBoxRef = useRef<HTMLDivElement | null>(null);
+  const [railGeo, setRailGeo] = useState({
+    stageH: 480,
+    pcY: 17,
+    regY: 96,
+    tapY: 162,
+    aluY: 274,
+    memY: 386,
+    wbY: 446,
+  });
+
+  const availableRadices: readonly RegRadix[] = showBinToggle
+    ? ['dec', 'u32', 'hex', 'bin']
+    : showHexToggle
+      ? ['dec', 'hex']
+      : ['dec'];
+  const activeRadix: RegRadix = availableRadices.includes(radix) ? radix : 'dec';
 
   useEffect(() => {
     setState(createManualCpuState(config, 0));
@@ -99,12 +140,64 @@ export function ManualCpuSandbox({
   const hasAlu = config.modules.includes('alu');
   const hasConstants = config.modules.includes('constants') && (config.constantCards?.length ?? 0) > 0;
   const hasPcTrack = config.modules.includes('pcTrack') && Boolean(config.pcTrack);
+  // 方案 A：recordToAsm === false 且无例程轨的关卡（1-6 及之后）纯由代码驱动，左侧 CPU 舞台作为实时执行监视器，不显示半残手动试算
+  const isMonitorOnly = config.recordToAsm === false && !hasPcTrack;
 
   const isPlayback = Boolean(playback?.active);
-  const isStageReadonly = isPlayback || hasPcTrack;
+  const isStageReadonly = isPlayback || hasPcTrack || isMonitorOnly;
+  const hasTopBar = showPipelineStages || isPlayback || isMonitorOnly;
   const displayRegs = isPlayback ? playback!.regs : state.regs;
   const activePulse = isPlayback ? playback!.pulse : manualPulse;
   const speed: PlaybackSpeed = isPlayback ? playback!.speed : hasPcTrack ? demoSpeed : 1;
+
+  // 监听中轴尺寸变化，像素级同步左右外轨与全部模块中线（PC / 寄存器 / 44px 总线分流口 / ALU / 访存 / 存入）
+  useLayoutEffect(() => {
+    const stageEl = stageBodyRef.current;
+    if (!stageEl) return;
+
+    const measure = () => {
+      const stageRect = stageEl.getBoundingClientRect();
+      if (stageRect.height < 40) return;
+      const stageH = Math.round(stageRect.height);
+      const centerY = (el: HTMLDivElement | null, fallbackRatio: number) => {
+        const r = el?.getBoundingClientRect();
+        return r && r.height > 0
+          ? Number((r.top - stageRect.top + r.height / 2).toFixed(1))
+          : Math.round(stageH * fallbackRatio);
+      };
+      const pcY = centerY(pcBarRef.current, 0.04);
+      const regY = centerY(regBoxRef.current, 0.2);
+      const busRect = busRef.current?.getBoundingClientRect();
+      // 44px 总线中，水平分流线精确位于 y=12（按实际渲染高度等比换算，杜绝 1px 偏移）
+      const tapY =
+        busRect && busRect.height > 0
+          ? Number((busRect.top - stageRect.top + (busRect.height * 12) / 44).toFixed(1))
+          : Math.round(stageH * 0.34);
+      const aluY = centerY(aluBoxRef.current, 0.58);
+      const memY = centerY(memStageRef.current, 0.8);
+      const wbY = centerY(wbBoxRef.current, 0.93);
+      setRailGeo((prev) =>
+        prev.stageH === stageH &&
+        prev.pcY === pcY &&
+        prev.regY === regY &&
+        prev.tapY === tapY &&
+        prev.aluY === aluY &&
+        prev.memY === memY &&
+        prev.wbY === wbY
+          ? prev
+          : { stageH, pcY, regY, tapY, aluY, memY, wbY },
+      );
+    };
+
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(stageEl);
+    for (const r of [pcBarRef, regBoxRef, busRef, aluBoxRef, memStageRef, wbBoxRef]) {
+      if (r.current) ro.observe(r.current);
+    }
+    return () => ro.disconnect();
+  }, [config, isPlayback, hasTopBar, memoryUnlocked, activeRadix, activePulse?.kind]);
 
   // 连续数据流时间轴驱动器：手玩、修 Bug 小例程与代码播放共用同一套精确接力节拍
   useEffect(() => {
@@ -114,7 +207,7 @@ export function ManualCpuSandbox({
       setPcJumpDone(false);
       return;
     }
-    const frames = buildStageSequence(activePulse, isPlayback);
+    const frames = buildStageSequence(activePulse, isPlayback, memoryUnlocked);
     if (frames.length === 0) {
       setActiveStage('idle');
       setWbLanded(false);
@@ -160,7 +253,7 @@ export function ManualCpuSandbox({
     return () => {
       for (const id of timers) window.clearTimeout(id);
     };
-  }, [activePulse, isPlayback, speed]);
+  }, [activePulse, isPlayback, memoryUnlocked, speed]);
 
   const stepDemoOnce = useCallback(() => {
     const nextSeq = pulseSeq + 1;
@@ -271,7 +364,9 @@ export function ManualCpuSandbox({
 
   const activeGoalRegs = isPlayback
     ? playback?.goalRegs ?? {}
-    : config.pcTrack?.cases?.[state.caseIndex]?.goal.regs ?? config.warmupPuzzle.goal.regs ?? {};
+    : isMonitorOnly
+      ? {}
+      : config.pcTrack?.cases?.[state.caseIndex]?.goal.regs ?? config.warmupPuzzle.goal.regs ?? {};
 
   const inFetch = activeStage === 'fetch';
   const inWriteback = activeStage === 'writeback' && Boolean(activePulse?.destReg);
@@ -323,9 +418,27 @@ export function ManualCpuSandbox({
                 onClick={onExitPlayback}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] font-medium text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200"
               >
-                <Hand className="h-3 w-3" /> {hasPcTrack ? '回到例程' : '切回手动'}
+                {isMonitorOnly ? (
+                  <>
+                    <Square className="h-3 w-3" /> 停止演示
+                  </>
+                ) : (
+                  <>
+                    <Hand className="h-3 w-3" /> {hasPcTrack ? '回到例程' : '切回手动'}
+                  </>
+                )}
               </button>
             )}
+          </>
+        ) : isMonitorOnly ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-950 px-2.5 py-0.5 text-[11px] font-semibold text-slate-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+              待命
+            </span>
+            <span className="text-[11px] text-slate-500">
+              点右侧「演示 / 提交验证」观察执行流
+            </span>
           </>
         ) : (
           <>
@@ -345,7 +458,7 @@ export function ManualCpuSandbox({
                         : 'border-slate-700 bg-slate-950 text-slate-300'
                     }`}
                   >
-                    {reg} = {want}
+                    {reg} = {formatDatapathValue(want, activeRadix)}
                     {hit && <Check className="h-3 w-3 text-emerald-300" />}
                   </span>
                 );
@@ -431,25 +544,23 @@ export function ManualCpuSandbox({
         />
       )}
 
-      {/* 竖向数据通路主体 + 左侧写回回流总线（直连寄存器左侧）+ 右侧分支跳转回流总线（直连顶部指令栏） */}
-      <div className="relative flex items-stretch gap-1.5">
-        {/* 左外侧回流轨道：存入区 → 寄存器左侧 绿色写回总线（物理上永远接入寄存器，绝不误接入右侧立即数端口） */}
+      {/* 竖向数据通路主体 + 左侧写回回流总线（直连寄存器左侧）+ 右侧存内存内轨与跳转外轨 */}
+      <div ref={stageBodyRef} className="relative flex items-stretch gap-1.5">
+        {/* 左外侧回流轨道：存入区中线 → 寄存器左侧中线 绿色写回总线（像素级闭合，绝不误接入右侧立即数端口） */}
         {(() => {
-          const hasTopBar = showPipelineStages || isPlayback;
-          const wbTopY = hasTopBar ? 92 : 54;
-          const wbTopPct = hasTopBar ? '25%' : '15%';
-          const wbPath = `M 24 332 L 10 332 L 10 ${wbTopY} L 24 ${wbTopY}`;
+          const { stageH, regY, wbY } = railGeo;
+          const wbPath = `M 30 ${wbY} L 10 ${wbY} L 10 ${regY} L 30 ${regY}`;
           const wbTravelDur = `${getStageSeconds('writeback', speed, 0.58).toFixed(2)}s`;
           const riseStyle = {
-            '--rz-wb-top': wbTopPct,
+            '--rz-wb-top': `${regY}px`,
+            '--rz-wb-bottom': `${wbY}px`,
             animationDuration: wbTravelDur,
           } as CSSProperties;
 
           return (
             <div className="relative hidden w-6 shrink-0 sm:block" aria-hidden="true">
               <svg
-                viewBox="0 0 24 360"
-                preserveAspectRatio="none"
+                viewBox={`0 0 24 ${stageH}`}
                 className="h-full w-full overflow-visible"
               >
                 <path
@@ -465,9 +576,9 @@ export function ManualCpuSandbox({
                 <span
                   key={`wb-pill-${activePulse.nonce}`}
                   style={riseStyle}
-                  className="rz-wb-rise pointer-events-none absolute left-[10px] z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full border border-emerald-200 bg-emerald-400 px-1.5 font-mono text-[10px] font-extrabold text-slate-950 shadow-[0_0_14px_rgba(52,211,153,0.7)]"
+                  className="rz-wb-rise pointer-events-none absolute left-[10px] z-10 flex h-5 min-w-[24px] items-center justify-center whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-400 px-1.5 font-mono text-[10px] font-extrabold text-slate-950 shadow-[0_0_14px_rgba(52,211,153,0.7)]"
                 >
-                  {activePulse.newDestVal}
+                  {formatDatapathValue(activePulse.newDestVal, activeRadix)}
                 </span>
               )}
             </div>
@@ -476,9 +587,10 @@ export function ManualCpuSandbox({
 
         {/* 中轴硬件模块 */}
         <div className="min-w-0 flex-1">
-          {/* 1. 指令与 PC 栏（演示代码时展示当前指令与 PC 行号；跳转胶囊抵达瞬间在本周期内翻牌更新 PC 并顶飞旧行号） */}
-          {(showPipelineStages || isPlayback) && (
+          {/* 1. 指令与 PC 栏（演示代码时展示当前指令与 PC 行号；监视器模式下常驻占位，启动播放零纵向跳动） */}
+          {hasTopBar && (
             <div
+              ref={pcBarRef}
               className={`mb-2 flex h-[34px] items-center justify-between gap-2 rounded-xl border px-3 transition ${
                 pcJustJumped && activeStage === 'writeback'
                   ? isLoopJump
@@ -521,16 +633,23 @@ export function ManualCpuSandbox({
                             : 'bg-slate-900 text-slate-400'
                         }`}
                       >
-                        {pcJustJumped
-                          ? `PC → 第 ${activePulse.nextLine} 行`
-                          : `PC 第 ${activePulse.line} 行`}
+                        {(() => {
+                          const rawPc = pcJustJumped ? playback?.pc : activePulse.pc;
+                          const hexPc =
+                            showPcAddress && rawPc !== undefined
+                              ? `0x${(rawPc >>> 0).toString(16).toUpperCase().padStart(4, '0')} · `
+                              : '';
+                          return pcJustJumped
+                            ? `PC → ${hexPc}第 ${activePulse.nextLine} 行`
+                            : `PC ${hexPc}第 ${activePulse.line} 行`;
+                        })()}
                       </span>
                     </span>
                   ) : null}
                 </div>
               ) : (
-                <span className="truncate text-[11px] text-slate-500">
-                  手动试算模式 · 点击或拖拽下方寄存器
+                <span className="truncate font-mono text-[11px] text-slate-600">
+                  {isMonitorOnly ? '—' : '手动试算模式 · 点击或拖拽下方寄存器'}
                 </span>
               )}
             </div>
@@ -545,7 +664,13 @@ export function ManualCpuSandbox({
             constantCards={!isStageReadonly && hasConstants ? config.constantCards : undefined}
             showRegXName={showRegXName}
             allowExpandAll={allowExpandAllRegs}
+            radix={activeRadix}
+            availableRadices={availableRadices}
+            onChangeRadix={setRadix}
             immediateUnlocked={immediateUnlocked}
+            memoryUnlocked={memoryUnlocked}
+            regBoxRef={regBoxRef}
+            busRef={busRef}
             showStageNames={showPipelineStages}
             showBus={hasAlu || isStageReadonly}
             speed={speed}
@@ -577,7 +702,11 @@ export function ManualCpuSandbox({
               pulse={activePulse}
               activeStage={activeStage}
               speed={speed}
+              radix={activeRadix}
               memoryUnlocked={memoryUnlocked}
+              aluBoxRef={aluBoxRef}
+              memStageRef={memStageRef}
+              wbBoxRef={wbBoxRef}
               showStageNames={showPipelineStages}
               playbackMode={isStageReadonly}
               onSelectSlot={setActiveSlot}
@@ -602,18 +731,68 @@ export function ManualCpuSandbox({
           )}
         </div>
 
-        {/* 右外侧回流轨道：分支/循环跳转写回 PC（对称于左侧寄存器写回，携带目标行号胶囊直冲顶部 PC 栏） */}
+        {/* 右外侧双车道总线轨道：内道（x=7）sw/sb 存内存直通轨（向下）；外道（x=24）分支/循环跳转回流 PC 轨（向上，仅在 ALU 出口以跳线拱桥跨过内道，拉开 17px 间距清晰不纠缠） */}
         {(() => {
+          const { stageH, pcY, tapY, aluY, memY } = railGeo;
           const jumpTravelDur = `${getStageSeconds('writeback', speed, 0.58 * 0.9).toFixed(2)}s`;
           const showRightRail = showJumpRail || hasPcTrack || inBranchReturn;
-          const jumpPath = 'M 0 225 L 14 225 L 14 18 L 0 18';
+          const isStoreDataActive =
+            activePulse?.kind === 'store' &&
+            Boolean(activePulse.storeDataSource) &&
+            (activeStage === 'decode' || activeStage === 'execute' || activeStage === 'memory');
+          // 精确三段接力：decode 在总线内从端口 B 横移出右缘 → execute 在右外轨直落访存入口 → memory 滑入访存中心汇合地址
+          const isStoreDataDropping =
+            activePulse?.kind === 'store' &&
+            Boolean(activePulse.storeDataSource) &&
+            activeStage === 'execute';
+          const showStoreRail = memoryUnlocked || isStoreDataActive;
+          const hasDualRightLanes = showRightRail && showStoreRail;
+          const railW = hasDualRightLanes ? 32 : 24;
+          const storeLaneX = hasDualRightLanes ? 7 : 12;
+          const jumpLaneX = hasDualRightLanes ? 24 : 12;
+
+          // 内道（存内存）：全程零交叉，像素级闭合端口 B 分流口与访存盒中线
+          const storePath = `M -6 ${tapY} L ${storeLaneX} ${tapY} L ${storeLaneX} ${memY} L -6 ${memY}`;
+          // 外道（跳转回流 PC）：双车道时在 ALU 出口用平滑半圆跳线拱桥跨过内道（x=7），拉开 17px 视觉间距
+          const jumpPath = hasDualRightLanes
+            ? `M -6 ${aluY} L ${storeLaneX - 5} ${aluY} A 5 5 0 0 1 ${storeLaneX + 5} ${aluY} L ${jumpLaneX} ${aluY} L ${jumpLaneX} ${pcY} L -6 ${pcY}`
+            : `M -6 ${aluY} L ${jumpLaneX} ${aluY} L ${jumpLaneX} ${pcY} L -6 ${pcY}`;
+
+          const jumpRiseStyle = {
+            left: `${jumpLaneX}px`,
+            '--rz-jump-from': `${aluY}px`,
+            '--rz-jump-to': `${pcY}px`,
+            animationDuration: jumpTravelDur,
+          } as CSSProperties;
+          const storeTravelDur = `${getStageSeconds('execute', speed).toFixed(2)}s`;
+          const storeDropStyle = {
+            left: `${storeLaneX}px`,
+            '--rz-store-top': `${tapY}px`,
+            '--rz-store-bottom': `${memY}px`,
+            animationDuration: storeTravelDur,
+          } as CSSProperties;
+
           return (
-            <div className="relative hidden w-6 shrink-0 sm:block" aria-hidden="true">
+            <div
+              className={`relative hidden shrink-0 sm:block ${hasDualRightLanes ? 'w-8' : 'w-6'}`}
+              aria-hidden="true"
+            >
               <svg
-                viewBox="0 0 24 360"
-                preserveAspectRatio="none"
+                viewBox={`0 0 ${railW} ${stageH}`}
                 className="h-full w-full overflow-visible"
               >
+                {/* 存内存内道直通数据轨（从寄存器端口 B 分流后绕过 ALU 直连访存单元写数据口） */}
+                {showStoreRail && (
+                  <path
+                    d={storePath}
+                    fill="none"
+                    stroke={isStoreDataActive ? '#a78bfa' : '#1e293b'}
+                    strokeWidth={isStoreDataActive ? 2.6 : 1.4}
+                    strokeDasharray={isStoreDataActive ? '6 5' : undefined}
+                    className={isStoreDataActive ? 'rz-wire-flow' : undefined}
+                  />
+                )}
+                {/* 分支/跳转外道回流 PC 轨道 */}
                 <path
                   d={jumpPath}
                   fill="none"
@@ -634,14 +813,23 @@ export function ManualCpuSandbox({
               {inBranchReturn && !wbLanded && activePulse?.nextLine !== undefined && (
                 <span
                   key={`jump-pill-${activePulse.nonce}`}
-                  style={{ animationDuration: jumpTravelDur }}
-                  className={`rz-jump-rise pointer-events-none absolute left-[14px] z-10 flex h-5 min-w-[28px] items-center justify-center rounded-full border px-1.5 font-mono text-[10px] font-extrabold text-slate-950 ${
+                  style={jumpRiseStyle}
+                  className={`rz-jump-rise pointer-events-none absolute z-10 flex h-5 min-w-[28px] items-center justify-center rounded-full border px-1.5 font-mono text-[10px] font-extrabold text-slate-950 ${
                     isLoopJump
                       ? 'border-amber-200 bg-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.75)]'
                       : 'border-cyan-100 bg-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.75)]'
                   }`}
                 >
                   {isLoopJump ? `↺${activePulse.nextLine}` : `→${activePulse.nextLine}`}
+                </span>
+              )}
+              {isStoreDataDropping && activePulse?.storeDataSource && (
+                <span
+                  key={`store-pill-${activePulse.nonce}`}
+                  style={storeDropStyle}
+                  className="rz-store-drop pointer-events-none absolute z-10 flex h-5 min-w-[26px] items-center justify-center whitespace-nowrap rounded-full border border-violet-200 bg-violet-500 px-1.5 font-mono text-[10px] font-extrabold text-white shadow-[0_0_14px_rgba(167,139,250,0.8)]"
+                >
+                  {formatDatapathValue(activePulse.storeDataSource.value, activeRadix)}
                 </span>
               )}
             </div>

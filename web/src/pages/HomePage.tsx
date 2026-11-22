@@ -7,6 +7,7 @@ import {
   Lock,
   Play,
   Sparkles,
+  Trophy,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../app/AppShell';
@@ -30,6 +31,10 @@ export function HomePage() {
   const spine = buildChapterSpine(chapter1);
   const recommended = nextRecommendedLevel(chapter1);
   const passedCount = chapter1.filter((l) => l.passed).length;
+  const parLevels = chapter1.filter(
+    (l) => l.parSteps !== undefined || l.parInstructions !== undefined,
+  );
+  const goldCount = parLevels.filter((l) => l.passed && l.metPar).length;
   const pct = chapter1.length > 0 ? Math.round((passedCount / chapter1.length) * 100) : 0;
 
   return (
@@ -41,11 +46,16 @@ export function HomePage() {
             {pct}%
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-base font-bold text-white">CH1 · RISC-V 汇编</h1>
               <span className="font-mono text-xs text-slate-400">
                 {passedCount}/{chapter1.length}
               </span>
+              {parLevels.length > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 font-mono text-[11px] font-bold text-amber-300">
+                  <Trophy className="h-3 w-3" /> {goldCount}/{parLevels.length} 金牌
+                </span>
+              )}
             </div>
             <div className="mt-1 h-1.5 w-44 overflow-hidden rounded-full bg-slate-800">
               <div
@@ -94,6 +104,8 @@ export function HomePage() {
           <div className="mx-auto max-w-4xl">
             {spine.map((node, idx) => {
               const prevPassed = idx === 0 ? true : spine[idx - 1]!.main.passed;
+              const isPostGameCluster =
+                idx === spine.length - 1 && node.sideChallenges.length >= 3;
               return (
                 <div key={node.main.id}>
                   {/* 主干垂直电路线 */}
@@ -112,7 +124,7 @@ export function HomePage() {
                       <DagNodeCard item={node.main} />
                     </div>
 
-                    {node.sideChallenges.length > 0 && (
+                    {!isPostGameCluster && node.sideChallenges.length > 0 && (
                       <div className="flex items-center md:w-[46%]">
                         {/* 支线水平分叉电路线 */}
                         <svg
@@ -141,6 +153,36 @@ export function HomePage() {
                       </div>
                     )}
                   </div>
+
+                  {/* 主线通关后开启的整组进阶性能挑战区（数据驱动：末节点挂接 ≥3 个挑战关时自动展开） */}
+                  {isPostGameCluster && (
+                    <div className="mt-1">
+                      <div className="flex justify-start pl-7">
+                        <div
+                          className={`h-6 w-0.5 transition ${
+                            node.main.passed
+                              ? 'bg-amber-400/80 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+                              : 'bg-slate-800'
+                          }`}
+                        />
+                      </div>
+                      <div className="rounded-2xl border border-amber-500/30 bg-amber-950/10 p-3.5">
+                        <div className="mb-2.5 flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                            <Flame className="h-3.5 w-3.5" /> 通关进阶 · 性能挑战试炼
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-400">
+                            按动态执行步数计金牌 · 不限代码行数
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {node.sideChallenges.map((ch) => (
+                            <DagNodeCard key={ch.id} item={ch} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -170,40 +212,76 @@ export function HomePage() {
 
 function DagNodeCard({ item }: { item: LevelSummary }) {
   const Icon = item.kind === 'challenge' ? Flame : item.kind === 'practice' ? Layers : Sparkles;
-  const iconTone =
-    item.kind === 'challenge'
+  const hasGold = Boolean(
+    item.passed &&
+      item.metPar &&
+      (item.parSteps !== undefined || item.parInstructions !== undefined),
+  );
+  const passedNoGold = Boolean(
+    item.passed &&
+      !item.metPar &&
+      (item.parSteps !== undefined || item.parInstructions !== undefined),
+  );
+  const iconTone = hasGold
+    ? 'text-amber-200 bg-gradient-to-br from-amber-400/35 to-yellow-500/20 ring-1 ring-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.35)]'
+    : item.kind === 'challenge'
       ? 'text-amber-400 bg-amber-500/15'
       : item.kind === 'practice'
         ? 'text-emerald-400 bg-emerald-500/15'
         : 'text-cyan-400 bg-cyan-500/15';
-
-  const shortTitle = item.title.includes('：') ? item.title.split('：')[1] : item.title;
 
   const content = (
     <div
       className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 transition ${
         !item.unlocked
           ? 'cursor-not-allowed border-slate-800/70 bg-slate-950/60 opacity-45'
-          : item.passed
-            ? 'border-emerald-500/50 bg-emerald-950/20 hover:border-emerald-400'
-            : item.kind === 'challenge'
-              ? 'border-amber-500/45 bg-amber-950/15 hover:border-amber-400'
-              : 'border-slate-700 bg-slate-900 hover:border-cyan-400'
+          : hasGold
+            ? 'border-amber-400/80 bg-gradient-to-r from-amber-950/40 via-slate-900 to-emerald-950/20 shadow-[0_0_18px_rgba(251,191,36,0.2)] hover:border-amber-300'
+            : item.passed
+              ? 'border-emerald-500/50 bg-emerald-950/20 hover:border-emerald-400'
+              : item.kind === 'challenge'
+                ? 'border-amber-500/45 bg-amber-950/15 hover:border-amber-400'
+                : 'border-slate-700 bg-slate-900 hover:border-cyan-400'
       }`}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${iconTone}`}>
-          {item.passed ? <Check className="h-4 w-4 text-emerald-300" /> : <Icon className="h-4 w-4" />}
+          {hasGold ? (
+            <Trophy className="h-4 w-4 text-amber-300" />
+          ) : item.passed ? (
+            <Check className="h-4 w-4 text-emerald-300" />
+          ) : (
+            <Icon className="h-4 w-4" />
+          )}
         </span>
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="font-mono text-xs font-bold text-slate-200">{item.id}</span>
-            <span className="truncate text-sm font-semibold text-white">{shortTitle}</span>
+            <span className="truncate text-sm font-semibold text-white">{item.title}</span>
           </div>
-          {item.parInstructions !== undefined && (
-            <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-amber-300">
-              <Award className="h-3 w-3" /> ≤{item.parInstructions}
-            </div>
+          {item.parSteps !== undefined ? (
+            hasGold ? (
+              <div className="mt-0.5 inline-flex items-center gap-1 rounded bg-amber-400/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-200">
+                <Trophy className="h-2.5 w-2.5 text-amber-300" />
+                性能金牌{item.bestSteps !== undefined ? ` · ${item.bestSteps}/${item.parSteps} 步` : ''}
+              </div>
+            ) : passedNoGold ? (
+              <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-slate-400">
+                <Award className="h-3 w-3 text-amber-500/70" />
+                {item.bestSteps !== undefined ? `${item.bestSteps}/≤${item.parSteps} 步` : `≤${item.parSteps} 步`}
+                <span className="text-amber-400/80">· 未获金牌</span>
+              </div>
+            ) : (
+              <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-amber-300">
+                <Award className="h-3 w-3" /> ⚡ 基准 ≤{item.parSteps} 步
+              </div>
+            )
+          ) : (
+            item.parInstructions !== undefined && (
+              <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-[10px] text-amber-300">
+                <Award className="h-3 w-3" /> ≤{item.parInstructions}
+              </div>
+            )
           )}
         </div>
       </div>

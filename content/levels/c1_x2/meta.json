@@ -1,0 +1,112 @@
+{
+  "id": "1-X2",
+  "chapter": 1,
+  "order": 19.2,
+  "kind": "challenge",
+  "title": "指数飞跃",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-18"
+  ],
+  "parSteps": 1650,
+  "concepts": [
+    "fast-pow",
+    "modular-exp"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "pcAddress": true,
+    "allRegsToggle": true,
+    "ecallSuffix": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 = 底数 a（≥0），t1 = 指数 b（可达近百万），t2 = 模数 m（2 ≤ m ≤ 30000）",
+    "after": "在极少步数内精确算出 (aᵇ mod m) 存入 t3（规定 a⁰ mod m = 1），以 a7 = 0 退出"
+  },
+  "briefing": [
+    {
+      "tag": "终局委托 · 密钥握手",
+      "text": "深空加密频道请求密钥握手，需要算出大指数模幂 `a^b mod m`（指数 `b` 高达近百万），暴力连乘必然超时断连！"
+    },
+    {
+      "tag": "挑战目标",
+      "text": "输入 `t0=a`、`t1=b`、`t2=m`，在极少步数内算出 `a^b mod m` 存入 `t3`（规定 `a^0 mod m = 1`），以 `a7 = 0` 退出。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "底数 a",
+      "t1": "指数 b",
+      "t2": "模数 m",
+      "t3": "输出",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "*",
+      "%"
+    ],
+    "warmupPuzzle": {
+      "prompt": "高速计算 t3 = (t0 ^ t1) mod t2（b 可达近百万，规定 a^0 mod m = 1），冲击性能金牌！",
+      "initial": {
+        "regs": {
+          "t0": 2,
+          "t1": 10,
+          "t2": 1000,
+          "t3": 1,
+          "t4": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t3": 24
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 0
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "初值 res = 1，base = a % m。只要 b > 0：若 b & 1 != 0，res = (res * base) % m；然后 base = (base * base) % m；b = b >> 1。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "注意最后还要正常停机（a7 = 0, ecall），且 b = 0 时循环 0 次直接返回 res = 1。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t3, zero, 1\nrem  t0, t0, t2\nloop:\nbeq  t1, zero, done\nandi t4, t1, 1\nbeq  t4, zero, skip_mul\nmul  t3, t3, t0\nrem  t3, t3, t2\nskip_mul:\nmul  t0, t0, t0\nrem  t0, t0, t2\nsrli t1, t1, 1\nj    loop\ndone:\naddi a7, zero, 0\necall"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits",
+    "rv32-arithmetic"
+  ]
+}

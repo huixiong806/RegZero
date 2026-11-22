@@ -3,13 +3,18 @@
   "chapter": 1,
   "order": 4.5,
   "kind": "challenge",
-  "title": "支线挑战：零空间原地交换",
+  "title": "徒手互换",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
-  "prerequisites": ["1-4"],
-  "parInstructions": 4,
-  "concepts": ["in-place-swap", "modular-arithmetic"],
+  "prerequisites": [
+    "1-4"
+  ],
+  "parSteps": 48,
+  "concepts": [
+    "in-place-swap",
+    "modular-arithmetic"
+  ],
   "ui": {
     "debugControls": true
   },
@@ -19,36 +24,47 @@
   },
   "briefing": [
     {
-      "tag": "硬核支线",
-      "text": "本关没有任何多余暂存槽：除了 `t0` 和 `t1`，其他寄存器全部锁定！"
+      "tag": "紧急支线 · 总线受损",
+      "text": "备用线路烧毁，整颗芯片只剩 `t0` 和 `t1` 通电——没有任何多余暂存槽！"
     },
     {
       "tag": "通关目标",
-      "text": "仅用 `add` 和 `sub`，**原地交换** `t0` 与 `t1` 中的两个整数。"
-    },
-    {
-      "tag": "思考线索",
-      "text": "先把两数之和放进 `t0`，看看能不能用减法依次把原来的两个数「还原」出来？"
+      "text": "仅用 `add` 和 `sub`，**原地交换** `t0` 与 `t1` 中的两个整数（不阻塞主线，卡住可看「提示」）。"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "alu"],
+    "modules": [
+      "regs",
+      "alu"
+    ],
     "recordToAsm": true,
-    "focusRegs": ["t0", "t1"],
+    "focusRegs": [
+      "t0",
+      "t1"
+    ],
     "regRoles": {
-      "t0": "槽 A（仅可用）",
-      "t1": "槽 B（仅可用）"
+      "t0": "输入/互换",
+      "t1": "输入/互换"
     },
-    "aluOps": ["+", "-"],
+    "aluOps": [
+      "+",
+      "-"
+    ],
     "allowCopy": false,
     "warmupPuzzle": {
-      "prompt": "没有暂存槽 t3 了！只靠 t0(10)、t1(3) 和加减法，先合并出两者的和，再反推出原值完成互换。",
+      "prompt": "除了 t0 和 t1，其他所有寄存器都被锁定了！仅用 add 和 sub，想办法原地互换它们的值。",
       "initial": {
-        "regs": { "t0": 10, "t1": 3 }
+        "regs": {
+          "t0": 10,
+          "t1": 3
+        }
       },
       "goal": {
-        "regs": { "t0": 3, "t1": 10 }
+        "regs": {
+          "t0": 3,
+          "t1": 10
+        }
       }
     }
   },
@@ -57,9 +73,23 @@
     "readonlySuffix": 1
   },
   "hints": [
-    { "level": 1, "type": "diagram", "content": "既然不能额外存备份，就让其中一个寄存器暂时保存「两数之和 a + b」，它同时包含了 a 和 b 的信息！" },
-    { "level": 2, "type": "steps", "content": "1. t0 = t0 + t1（现在 t0 = a + b）；2. t1 = t0 - t1（得到原 a）；3. t0 = t0 - t1（得到原 b）。" },
-    { "level": 3, "type": "snippet", "content": "add t0, t0, t1\nsub t1, t0, t1\nsub t0, t0, t1" }
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "既然不能额外存备份，就让其中一个寄存器暂时保存「两数之和 a + b」，它同时包含了 a 和 b 的信息！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. t0 = t0 + t1（现在 t0 = a + b）；2. t1 = t0 - t1（得到原 a）；3. t0 = t0 - t1（得到原 b）。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "add t0, t0, t1\nsub t1, t0, t1\nsub t0, t0, t1"
+    }
   ],
-  "wikiRefs": ["rv32-arithmetic"]
+  "wikiRefs": [
+    "rv32-arithmetic"
+  ]
 }

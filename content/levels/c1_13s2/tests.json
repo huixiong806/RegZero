@@ -1,0 +1,150 @@
+{
+  "level": "1-13S2",
+  "language": "asm",
+  "availableOps": [
+    "lw",
+    "xor",
+    "xori",
+    "and",
+    "andi",
+    "or",
+    "ori",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "beq",
+    "bne",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "[7, 9, 3, 7, 3] → 9",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 5
+          },
+          "memory": {
+            "0x1000": [
+              7,
+              9,
+              3,
+              7,
+              3
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 9
+          }
+        }
+      },
+      {
+        "name": "含负数：[-42, 100, -42, -7, 100, 88, 88] → -7",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 7
+          },
+          "memory": {
+            "0x1000": [
+              -42,
+              100,
+              -42,
+              -7,
+              100,
+              88,
+              88
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": -7
+          }
+        }
+      },
+      {
+        "name": "长数组（9 元素）：落单数是 0x1234",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 9
+          },
+          "memory": {
+            "0x1000": [
+              11,
+              22,
+              33,
+              4660,
+              44,
+              22,
+              11,
+              44,
+              33
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 4660
+          }
+        }
+      },
+      {
+        "name": "单元素边界：[55] → 55",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 1
+          },
+          "memory": {
+            "0x1000": [
+              55
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 55
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11361,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "arrays": [
+        {
+          "addr": "0x1000",
+          "addrReg": "t0",
+          "lenReg": "t1",
+          "len": [
+            3,
+            13
+          ],
+          "elem": [
+            -500,
+            500
+          ],
+          "kind": "pairsWithOneSingle"
+        }
+      ]
+    }
+  }
+}

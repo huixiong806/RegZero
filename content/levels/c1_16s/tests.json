@@ -1,0 +1,97 @@
+{
+  "level": "1-16S",
+  "language": "asm",
+  "availableOps": [
+    "jal",
+    "ret",
+    "jalr",
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mul",
+    "mv",
+    "blt",
+    "bge",
+    "beq",
+    "bne",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "F(0) = 0（边界）",
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0
+          }
+        }
+      },
+      {
+        "name": "F(1) = 1（边界）",
+        "initial": {
+          "regs": {
+            "t0": 1
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 1
+          }
+        }
+      },
+      {
+        "name": "F(10) = 55",
+        "initial": {
+          "regs": {
+            "t0": 10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 55
+          }
+        }
+      },
+      {
+        "name": "F(25) = 75025（递归会超时爆炸！）",
+        "initial": {
+          "regs": {
+            "t0": 25
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 75025
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11651,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 0,
+          "max": 28
+        }
+      }
+    }
+  }
+}

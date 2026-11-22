@@ -1,0 +1,73 @@
+{
+  "level": "1-17",
+  "language": "asm",
+  "availableOps": [
+    "li",
+    "lui",
+    "lbu",
+    "sb",
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "beq",
+    "bne",
+    "blt",
+    "bge",
+    "bltu",
+    "bgeu",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 10000,
+  "goal": {
+    "type": "output",
+    "tests": [
+      {
+        "name": "混合英文与标点：Hello, RegZero 2026!",
+        "input": {
+          "text": "Hello, RegZero 2026!"
+        },
+        "output": {
+          "text": "HELLO, REGZERO 2026!"
+        }
+      },
+      {
+        "name": "边界字符测试：`@az{`（只有 a 和 z 变大写）",
+        "input": {
+          "text": "`az{"
+        },
+        "output": {
+          "text": "`AZ{"
+        }
+      },
+      {
+        "name": "全数字与符号：123 + 456 = 579",
+        "input": {
+          "text": "123 + 456 = 579"
+        },
+        "output": {
+          "text": "123 + 456 = 579"
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11701,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkOutput": true,
+    "inputs": {
+      "textStream": {
+        "kind": "mixedAscii",
+        "len": [
+          6,
+          22
+        ]
+      }
+    }
+  }
+}

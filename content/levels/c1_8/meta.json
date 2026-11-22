@@ -1,0 +1,101 @@
+{
+  "id": "1-8",
+  "chapter": 1,
+  "order": 8,
+  "kind": "lesson",
+  "title": "仓库门牌",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-7"
+  ],
+  "concepts": [
+    "memory",
+    "hex",
+    "lw",
+    "sw",
+    "byte-addressing"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 中存着一段内存的起始地址，该处连续放着两个整数",
+    "after": "将这两个整数读出相加，把结果写进紧随其后的第 3 个整数位置"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "黑匣子**内存条**重新挂载成功！寄存器数量有限，大量数据都存放在带编号的外部内存里。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "从 `t0` 指向的内存起始位置起，连续存放着两个整数。请把它们读出来相加，再把结果写进紧随其后的第 3 个整数位置。\n内存地址的排布方式与新指令用法，点开右上角「规则」即可查看。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "regRoles": {
+      "t0": "首地址"
+    },
+    "aluOps": [
+      "+"
+    ],
+    "warmupPuzzle": {
+      "prompt": "先点右上角「规则」了解内存地址与读写指令用法，把前两个整数读出相加并写回第 3 个位置。",
+      "initial": {
+        "regs": {
+          "t0": 4096,
+          "t1": 0,
+          "t2": 0,
+          "t3": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t3": 30
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "CPU 不能直接把两个内存格子相加：必须先用 lw 把两个数搬进寄存器，用 add 算好后，再用 sw 存回内存。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. lw t1, 0(t0)；2. lw t2, 4(t0)；3. add t3, t1, t2；4. sw t3, 8(t0)。注意 sw 的源寄存器写在左边，目标地址写在右边！"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "lw  t1, 0(t0)\nlw  t2, 4(t0)\nadd t3, t1, t2\nsw  t3, 8(t0)"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-memory",
+    "rv32-registers"
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "id": "1-12",
+  "chapter": 1,
+  "order": 12,
+  "kind": "lesson",
+  "title": "补码双面",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-11"
+  ],
+  "concepts": [
+    "twos-complement",
+    "signed-unsigned",
+    "srai",
+    "bltu",
+    "bgeu"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 与 t1 是两个 32 位整数（可能包含负数，如 -16、-1）",
+    "after": "t2 = t0 算术右移 2 位（保留符号）；t3 = t0 与 t1 按无符号比较的较大者"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "深空外舱温度探头传回了零下负值，而同时地址总线传来的又是无符号大数——同一串 32 位比特，竟然能读出正负两张面孔！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "算出 `t2` = `t0` 算术右移 2 位（保留负号），`t3` = `t0` 与 `t1` 按无符号比较的较大者。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "regRoles": {
+      "t0": "输入 A",
+      "t1": "输入 B",
+      "t2": "右移结果",
+      "t3": "较大者"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "点击寄存器顶栏的 DEC / U32 / HEX / BIN，对比 -16 和 -1 在四种视角下的真实模样！",
+      "initial": {
+        "regs": {
+          "t0": -16,
+          "t1": 100,
+          "t2": 0,
+          "t3": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t2": -4,
+          "t3": -16
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "有符号右移用 srai（保留符号位）；无符号比大小用 bltu / bgeu：-16 的无符号值是 4294967280，比 100 大得多！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. srai t2, t0, 2；2. bltu t0, t1, pick_t1；3. mv t3, t0；4. j done；5. pick_t1: mv t3, t1；6. done:。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "srai t2, t0, 2\nbltu t0, t1, pick_t1\nmv   t3, t0\nj    done\npick_t1:\nmv   t3, t1\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits",
+    "rv32-branch"
+  ]
+}

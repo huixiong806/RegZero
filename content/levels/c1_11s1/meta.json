@@ -1,0 +1,101 @@
+{
+  "id": "1-11S1",
+  "chapter": 1,
+  "order": 11.5,
+  "kind": "challenge",
+  "title": "无乘造倍",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-11"
+  ],
+  "parSteps": 72,
+  "concepts": [
+    "strength-reduction"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 是一个整数（本关禁用乘法指令 mul）",
+    "after": "仅用移位与加减法，极速算出 t1 = t0 × 10 与 t2 = t0 × 15"
+  },
+  "briefing": [
+    {
+      "tag": "硬核支线 · 无乘增益",
+      "text": "信号放大通道仍没有乘法电路，需要同时生成 `×10` 与 `×15` 两档极速增益信号。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "禁用 `mul`，仅用移位与加减算出 `t1 = t0 × 10` 与 `t2 = t0 × 15`，向性能金牌发起冲击！"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "regRoles": {
+      "t0": "输入 x",
+      "t1": "x × 10",
+      "t2": "x × 15"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "乘法指令 mul 已禁用！只用移位和加减法，极速算出 t1 = t0 × 10 与 t2 = t0 × 15。",
+      "initial": {
+        "regs": {
+          "t0": 7,
+          "t1": 0,
+          "t2": 0,
+          "t3": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 70,
+          "t2": 105
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "不要把 15 拆成 8+4+2+1（太慢），拆成 16 - 1 只需一次左移和一次减法！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. t1 = t0 << 3（8x）；2. t3 = t0 << 1（2x）；3. t1 = t1 + t3（10x）；4. t2 = t0 << 4（16x）；5. t2 = t2 - t0（15x）。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "slli t1, t0, 3\nslli t3, t0, 1\nadd  t1, t1, t3\nslli t2, t0, 4\nsub  t2, t2, t0"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits"
+  ]
+}

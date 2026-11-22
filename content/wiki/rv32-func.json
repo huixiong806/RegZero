@@ -1,0 +1,108 @@
+{
+  "topic": "rv32-func",
+  "title": "子程序、栈、MMIO 与系统调用",
+  "order": 6,
+  "unlockAny": ["function", "stack", "mmio", "syscall"],
+  "summary": "指令本身也以 32 位整数的形式存放在代码内存 0x0000 中。配合 jal/ret、栈指针 sp、MMIO 端口与 ecall，就能写出结构清晰的完整程序。",
+  "sections": [
+    {
+      "id": "call-ops",
+      "heading": "子程序调用与返回",
+      "unlockAny": ["function", "jal", "ret"],
+      "kind": "table",
+      "columns": [
+        { "id": "op", "label": "指令", "unlockAny": [] },
+        { "id": "syntax", "label": "写法", "unlockAny": [] },
+        { "id": "meaning", "label": "动作", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "jal",
+          "unlockAny": ["jal"],
+          "cells": {
+            "op": "`jal`",
+            "syntax": "`jal ra, 子程序标签`",
+            "meaning": "将下一条指令地址 `PC + 4` 写入 `ra`，并跳转到子程序"
+          }
+        },
+        {
+          "id": "ret",
+          "unlockAny": ["ret"],
+          "cells": {
+            "op": "`ret`",
+            "syntax": "`ret`（等价于 `jalr zero, ra, 0`）",
+            "meaning": "跳回到 `ra` 中保存的返回地址"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stack-pattern",
+      "heading": "栈帧模板（sp 向下增长）",
+      "unlockAny": ["stack", "sp"],
+      "kind": "markdown",
+      "markdown": "`sp` 默认指向 `0xF000`。凡是会嵌套调用或递归的子程序，都必须在入口压栈保存 `ra`（以及要保护的寄存器/参数），返回前原样弹栈：\n\n```asm\naddi sp, sp, -8\nsw   ra, 4(sp)\nsw   a0, 0(sp)\n# …… 调用其他子程序 ……\nlw   a0, 0(sp)\nlw   ra, 4(sp)\naddi sp, sp, 8\nret\n```"
+    },
+    {
+      "id": "mmio-table",
+      "heading": "MMIO 硬件端口地址",
+      "unlockAny": ["mmio"],
+      "kind": "table",
+      "columns": [
+        { "id": "addr", "label": "地址", "unlockAny": [] },
+        { "id": "dir", "label": "访问方式", "unlockAny": [] },
+        { "id": "desc", "label": "说明", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "mmio-display",
+          "unlockAny": ["mmio"],
+          "cells": { "addr": "`0xF0000000`", "dir": "`sb`（只写）", "desc": "向终端屏幕输出 1 个 ASCII 字符" }
+        },
+        {
+          "id": "mmio-input",
+          "unlockAny": ["mmio"],
+          "cells": { "addr": "`0xF0000004`", "dir": "`lbu`（只读）", "desc": "从输入队列取走 1 个字节，队列空时返回 `0`" }
+        }
+      ]
+    },
+    {
+      "id": "ecall-table",
+      "heading": "ecall 系统调用号速查（a7）",
+      "unlockAny": ["syscall", "ecall"],
+      "kind": "table",
+      "columns": [
+        { "id": "num", "label": "a7", "unlockAny": [] },
+        { "id": "name", "label": "服务", "unlockAny": [] },
+        { "id": "io", "label": "参数 / 返回值（a0）", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "sys-exit",
+          "unlockAny": ["syscall"],
+          "cells": { "num": "`0`", "name": "结束程序", "io": "`a0` 为退出码（通常 `0`）" }
+        },
+        {
+          "id": "sys-putc",
+          "unlockAny": ["syscall"],
+          "cells": { "num": "`1`", "name": "输出字符", "io": "`a0` 低 8 位作为 ASCII 字符打印" }
+        },
+        {
+          "id": "sys-putint",
+          "unlockAny": ["syscall"],
+          "cells": { "num": "`2`", "name": "输出整数", "io": "`a0` 按十进制有符号整数打印" }
+        },
+        {
+          "id": "sys-getc",
+          "unlockAny": ["syscall"],
+          "cells": { "num": "`3`", "name": "读入字符", "io": "读入 1 字节到 `a0`（空为 `0`）" }
+        },
+        {
+          "id": "sys-getint",
+          "unlockAny": ["syscall"],
+          "cells": { "num": "`4`", "name": "读入整数", "io": "跳过空白读入十进制有符号整数到 `a0`" }
+        }
+      ]
+    }
+  ]
+}

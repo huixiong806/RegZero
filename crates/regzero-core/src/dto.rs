@@ -25,11 +25,17 @@ pub struct LevelSummary {
     pub concepts: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub par_instructions: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub par_steps: Option<u64>,
     pub passed: bool,
     pub unlocked: bool,
     pub attempts: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub best_score: Option<u32>,
+    #[serde(default)]
+    pub met_par: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub best_steps: Option<u64>,
 }
 
 /// 测例摘要（供前端测例选择器与 Before/After 预览展示）。
@@ -75,6 +81,9 @@ pub struct LevelPayload {
     pub available_ops: Vec<String>,
     pub forbidden_regs: Vec<String>,
     pub tests_preview: Vec<TestCasePreview>,
+    /// 本关用于计算 `parSteps` 的固定基准测例总数（公开 + 固定种子隐藏测例）
+    #[serde(default)]
+    pub benchmark_count: usize,
     /// 参考解（卡住展开 3 级提示或自检时可选展示）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub solution: Option<String>,
@@ -168,6 +177,11 @@ pub struct StepPayload {
 pub struct TestVerdictDto {
     pub name: String,
     pub passed: bool,
+    pub steps: u64,
+    #[serde(default)]
+    pub hidden: bool,
+    #[serde(default)]
+    pub is_random: bool,
     pub detail: String,
     pub diffs: Vec<DiffDto>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -213,12 +227,29 @@ pub struct SubmitDto {
     pub level: String,
     pub passed: bool,
     pub score: u32,
-    /// 静态编译产出的机器码指令条数（可用于指令数 Par 挑战）
+    /// 静态编译产出的机器码指令条数
     #[serde(skip_serializing_if = "Option::is_none")]
     pub instruction_count: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub par_instructions: Option<usize>,
+    /// 固定基准测例动态执行的总指令步数（性能优化主指标）
+    pub total_steps: u64,
+    /// 计入 `total_steps` 的固定基准测例条数
+    #[serde(default)]
+    pub benchmark_count: usize,
+    /// 可选性能金牌目标步数上限
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub par_steps: Option<u64>,
     pub met_par: bool,
+    /// 隐藏与随机抽测通过条数
+    #[serde(default)]
+    pub hidden_passed: usize,
+    /// 隐藏与随机抽测总条数
+    #[serde(default)]
+    pub hidden_total: usize,
+    /// 本次提交使用的动态随机种子（失败时供前端钉住跨会话复现）
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dynamic_seed: Option<u32>,
     pub summary: String,
     pub tests: Vec<TestVerdictDto>,
     pub errors: Vec<ErrorDto>,
@@ -289,48 +320,81 @@ pub struct WikiTableRow {
     pub cells: BTreeMap<String, String>,
 }
 
-/// 将领域层 `Verdict` 转换为标准 `SubmitDto`。
+/// 将领域层 `Verdict` 转换为标准 `SubmitDto`（优先按动态执行步数 `par_steps` 评性能金牌）。
 pub fn verdict_to_submit_dto(
     level: &str,
     verdict: Verdict,
     instruction_count: Option<usize>,
     par_instructions: Option<usize>,
+    par_steps: Option<u64>,
+    dynamic_seed: Option<u32>,
 ) -> SubmitDto {
-    let met_par = match (verdict.passed, instruction_count, par_instructions) {
-        (true, Some(count), Some(par)) => count <= par,
-        _ => false,
+    let met_par = if let Some(par_s) = par_steps {
+        verdict.passed && verdict.total_steps <= par_s
+    } else {
+        match (verdict.passed, instruction_count, par_instructions) {
+            (true, Some(count), Some(par)) => count <= par,
+            _ => false,
+        }
     };
+
+    let mut hidden_total = 0usize;
+    let mut hidden_passed = 0usize;
+    let mut visible_tests = Vec::new();
+    let mut first_hidden_fail_shown = false;
+
+    for t in verdict.tests {
+        if t.hidden {
+            hidden_total += 1;
+            if t.passed {
+                hidden_passed += 1;
+                continue;
+            }
+            // 隐藏/随机测例失败时，只向前端暴露第一条失败点供排查与单步调试，其余继续保密
+            if first_hidden_fail_shown {
+                continue;
+            }
+            first_hidden_fail_shown = true;
+        }
+        visible_tests.push(TestVerdictDto {
+            name: t.name,
+            passed: t.passed,
+            steps: t.steps,
+            hidden: t.hidden,
+            is_random: t.is_random,
+            detail: t.detail,
+            diffs: t
+                .diffs
+                .into_iter()
+                .map(|d| DiffDto { what: d.what, expected: d.expected, actual: d.actual })
+                .collect(),
+            actual_output: t.actual_output,
+            failure: t.failure_site.map(|f| FailureDto {
+                case_index: f.case_index,
+                pc: f.pc,
+                line: f.line,
+                reason: format!("{:?}", f.reason),
+                reason_text: f.reason.describe().to_string(),
+                regs: f.regs.into_iter().collect(),
+            }),
+        });
+    }
+
     SubmitDto {
         level: level.to_string(),
         passed: verdict.passed,
         score: verdict.score,
         instruction_count,
         par_instructions,
+        total_steps: verdict.total_steps,
+        benchmark_count: verdict.benchmark_count,
+        par_steps,
         met_par,
+        hidden_passed,
+        hidden_total,
+        dynamic_seed,
         summary: verdict.summary,
-        tests: verdict
-            .tests
-            .into_iter()
-            .map(|t| TestVerdictDto {
-                name: t.name,
-                passed: t.passed,
-                detail: t.detail,
-                diffs: t
-                    .diffs
-                    .into_iter()
-                    .map(|d| DiffDto { what: d.what, expected: d.expected, actual: d.actual })
-                    .collect(),
-                actual_output: t.actual_output,
-                failure: t.failure_site.map(|f| FailureDto {
-                    case_index: f.case_index,
-                    pc: f.pc,
-                    line: f.line,
-                    reason: format!("{:?}", f.reason),
-                    reason_text: f.reason.describe().to_string(),
-                    regs: f.regs.into_iter().collect(),
-                }),
-            })
-            .collect(),
+        tests: visible_tests,
         errors: verdict
             .errors
             .into_iter()
@@ -467,6 +531,63 @@ pub fn describe_executed_op(
                 dto.rd_new_val = Some(reg_val(regs_after, rd));
             }
         }
+        Instruction::Andi { rd, rs1, imm }
+        | Instruction::Ori { rd, rs1, imm }
+        | Instruction::Xori { rd, rs1, imm } => {
+            dto.kind = "alu".into();
+            dto.asm_text = format!("{} {}, {}, {}", inst.mnemonic(), abi(rd), abi(rs1), imm);
+            dto.symbol = Some(
+                match inst {
+                    Instruction::Andi { .. } => "&",
+                    Instruction::Ori { .. } => "|",
+                    _ => "^",
+                }
+                .into(),
+            );
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(reg_val(regs_before, rs1));
+            dto.imm = Some(imm);
+            if rd != 0 {
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+        }
+        Instruction::Slli { rd, rs1, shamt }
+        | Instruction::Srli { rd, rs1, shamt }
+        | Instruction::Srai { rd, rs1, shamt } => {
+            dto.kind = "alu".into();
+            dto.asm_text = format!("{} {}, {}, {}", inst.mnemonic(), abi(rd), abi(rs1), shamt);
+            dto.symbol = Some(
+                match inst {
+                    Instruction::Slli { .. } => "<<",
+                    Instruction::Srli { .. } => ">>>",
+                    _ => ">>",
+                }
+                .into(),
+            );
+            dto.rs1 = Some(abi(rs1));
+            dto.rs1_val = Some(reg_val(regs_before, rs1));
+            dto.imm = Some(shamt as i32);
+            if rd != 0 {
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+        }
+        Instruction::Lui { rd, imm } => {
+            dto.kind = "alu".into();
+            dto.asm_text = format!("lui {}, 0x{:X}", abi(rd), (imm as u32) >> 12);
+            dto.symbol = Some("<<".into());
+            dto.rs1 = Some("zero".into());
+            dto.rs1_val = Some(0);
+            dto.imm = Some(imm);
+            if rd != 0 {
+                dto.rd = Some(abi(rd));
+                dto.rd_old_val = Some(reg_val(regs_before, rd));
+                dto.rd_new_val = Some(reg_val(regs_after, rd));
+            }
+        }
         Instruction::Beq { rs1, rs2, .. }
         | Instruction::Bne { rs1, rs2, .. }
         | Instruction::Blt { rs1, rs2, .. }
@@ -532,6 +653,7 @@ pub fn describe_executed_op(
         | Instruction::Lhu { rd, rs1, imm }
         | Instruction::Lbu { rd, rs1, imm } => {
             dto.kind = "load".into();
+            dto.symbol = Some("+".into());
             dto.asm_text = format!("{} {}, {}({})", inst.mnemonic(), abi(rd), imm, abi(rs1));
             let base = reg_val(regs_before, rs1);
             dto.rs1 = Some(abi(rs1));
@@ -550,6 +672,7 @@ pub fn describe_executed_op(
         | Instruction::Sh { rs1, rs2, imm }
         | Instruction::Sb { rs1, rs2, imm } => {
             dto.kind = "store".into();
+            dto.symbol = Some("+".into());
             dto.asm_text = format!("{} {}, {}({})", inst.mnemonic(), abi(rs2), imm, abi(rs1));
             let base = reg_val(regs_before, rs1);
             let stored = reg_val(regs_before, rs2);

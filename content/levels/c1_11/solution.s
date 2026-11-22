@@ -1,0 +1,5 @@
+# 禁用乘除：计算 t1 = t0*8，t2 = t0/4，t3 = t0 高 8 位
+slli t1, t0, 3
+srli t2, t0, 2
+srli t3, t0, 24
+ecall

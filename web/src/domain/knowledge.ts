@@ -24,6 +24,10 @@ export interface UiDisclosure {
   showAllRegsToggle: boolean;
   /** 是否展示「DEC / HEX」十六进制切换按钮。 */
   showHexToggle: boolean;
+  /** 是否展示「DEC / U32 / HEX / BIN」无符号与二进制视图切换。 */
+  showBinToggle: boolean;
+  /** 是否在顶部 PC 栏展示真实 16 进制字节地址（如 0x0004 · 第 2 行）。 */
+  showPcAddress: boolean;
   /**
    * 是否自动把“未在 focusRegs 里但非零”的寄存器（如模拟器默认初始化的 sp=0xF000）
    * 展示在寄存器面板中。
@@ -48,6 +52,8 @@ export const FULL_UI_DISCLOSURE: UiDisclosure = {
   showRegXName: true,
   showAllRegsToggle: true,
   showHexToggle: true,
+  showBinToggle: true,
+  showPcAddress: true,
   showUntrackedNonZeroRegs: true,
   showEcallSuffix: true,
   showDebugControls: true,
@@ -66,6 +72,8 @@ export function resolveLevelUiDisclosure(ui?: LevelUiConfig): UiDisclosure {
     showRegXName: Boolean(ui?.regXName),
     showAllRegsToggle: Boolean(ui?.allRegsToggle),
     showHexToggle: Boolean(ui?.hexToggle),
+    showBinToggle: Boolean(ui?.binToggle),
+    showPcAddress: Boolean(ui?.pcAddress),
     showUntrackedNonZeroRegs: Boolean(ui?.untrackedRegs),
     showEcallSuffix: Boolean(ui?.ecallSuffix),
     showDebugControls: Boolean(ui?.debugControls),
@@ -126,6 +134,8 @@ export function deriveUiDisclosure(
     showAllRegsToggle: knownConcepts.has('reg-hardware-id') || knownConcepts.has('all-registers'),
     showHexToggle:
       knownConcepts.has('hex') || knownConcepts.has('memory-address') || knownConcepts.has('stack'),
+    showBinToggle: knownConcepts.has('binary') || knownConcepts.has('twos-complement') || knownConcepts.has('bitwise'),
+    showPcAddress: knownConcepts.has('program-as-data') || knownConcepts.has('jal'),
     showUntrackedNonZeroRegs: knownConcepts.has('stack') || knownConcepts.has('all-registers'),
     showEcallSuffix: knownConcepts.has('ecall') || knownConcepts.has('syscall'),
     showDebugControls:

@@ -3,12 +3,18 @@
   "chapter": 1,
   "order": 5,
   "kind": "lesson",
-  "title": "乘除与余数：div、rem 与 mul",
+  "title": "装箱车间",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
-  "prerequisites": ["1-4"],
-  "concepts": ["mul", "div", "rem"],
+  "prerequisites": [
+    "1-4"
+  ],
+  "concepts": [
+    "mul",
+    "div",
+    "rem"
+  ],
   "ui": {
     "debugControls": true
   },
@@ -18,35 +24,62 @@
   },
   "briefing": [
     {
-      "tag": "新指令",
-      "text": "除了加减，CPU 还提供整数乘除与取余指令：`mul`（相乘）、`div`（整除，向零截断）和 `rem`（余数）。"
+      "tag": "任务背景",
+      "text": "补给舱恢复清点，需要把 `t0` 件物资按每箱 `t1` 件打包，并向主控汇报装满了几箱、剩下多少零头。"
+    },
+    {
+      "tag": "新指令：乘除与取余",
+      "text": "算术单元解锁整数乘除指令：`mul`（相乘）、`div`（整除，向零截断）与 `rem`（余数）。"
     },
     {
       "tag": "通关目标",
-      "text": "把 `t0` 件物品按每箱 `t1` 件装箱：整箱数存 `t2`，剩余零头存 `t3`，已装箱总数存 `t4`。"
+      "text": "整箱数存 `t2`，剩余零头存 `t3`，已装箱总数存 `t4`。"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "alu"],
+    "modules": [
+      "regs",
+      "alu"
+    ],
     "recordToAsm": true,
-    "focusRegs": ["t0", "t1", "t2", "t3", "t4"],
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4"
+    ],
     "regRoles": {
       "t0": "总数",
-      "t1": "每箱容量",
+      "t1": "箱容量",
       "t2": "整箱数",
       "t3": "余数",
-      "t4": "已装箱数"
+      "t4": "已装数"
     },
-    "aluOps": ["×", "÷", "%"],
+    "aluOps": [
+      "×",
+      "÷",
+      "%"
+    ],
     "allowCopy": false,
     "warmupPuzzle": {
       "prompt": "把 17 件物品按每箱 5 件打包：用 ÷ 算整箱数进 t2，用 % 算余数进 t3，再用 × 算已装箱总数进 t4。",
       "initial": {
-        "regs": { "t0": 17, "t1": 5, "t2": 0, "t3": 0, "t4": 0 }
+        "regs": {
+          "t0": 17,
+          "t1": 5,
+          "t2": 0,
+          "t3": 0,
+          "t4": 0
+        }
       },
       "goal": {
-        "regs": { "t2": 3, "t3": 2, "t4": 15 }
+        "regs": {
+          "t2": 3,
+          "t3": 2,
+          "t4": 15
+        }
       }
     }
   },
@@ -55,9 +88,23 @@
     "readonlySuffix": 1
   },
   "hints": [
-    { "level": 1, "type": "diagram", "content": "先用 div 算出商 t2，用 rem 算出余数 t3，最后把商 t2 乘回每箱容量 t1 放进 t4。" },
-    { "level": 2, "type": "steps", "content": "1. div t2, t0, t1；2. rem t3, t0, t1；3. mul t4, t2, t1。" },
-    { "level": 3, "type": "snippet", "content": "div t2, t0, t1\nrem t3, t0, t1\nmul t4, t2, t1" }
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "先用 div 算出商 t2，用 rem 算出余数 t3，最后把商 t2 乘回每箱容量 t1 放进 t4。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. div t2, t0, t1；2. rem t3, t0, t1；3. mul t4, t2, t1。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "div t2, t0, t1\nrem t3, t0, t1\nmul t4, t2, t1"
+    }
   ],
-  "wikiRefs": ["rv32-arithmetic"]
+  "wikiRefs": [
+    "rv32-arithmetic"
+  ]
 }

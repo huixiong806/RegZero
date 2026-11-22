@@ -1,0 +1,106 @@
+{
+  "id": "1-12S",
+  "chapter": 1,
+  "order": 12.5,
+  "kind": "challenge",
+  "title": "一门双检",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-12"
+  ],
+  "parSteps": 410,
+  "concepts": [
+    "unsigned-range-trick"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 是内存首地址，t1 是整数个数 n，t2 是上限 limit（limit > 0）",
+    "after": "统计有多少个元素满足 0 <= x < limit，结果存入 t3"
+  },
+  "briefing": [
+    {
+      "tag": "硬核支线 · 安全温区",
+      "text": "温控采样序列里混进了零下异常值和超温告警，需要统计落在安全区间 `[0, limit)` 内的有效样本数。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "`t0` 为首地址，`t1` 为条数，`t2` 为上限 `limit`。统计满足 `0 <= x < limit` 的个数存入 `t3`，尽量压低总步数冲金牌！"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4"
+    ],
+    "regRoles": {
+      "t0": "首地址",
+      "t1": "个数 n",
+      "t2": "上限",
+      "t3": "计数"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "统计数组中有多少元素满足 0 <= x < limit。试着冲击性能金牌步数线！",
+      "initial": {
+        "regs": {
+          "t0": 4096,
+          "t1": 6,
+          "t2": 100,
+          "t3": 0,
+          "t4": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t3": 3
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "任意负数（如 -1 = 0xFFFFFFFF）在无符号视角下都 >= 0x80000000，所以对任何正数 limit，单条 bgeu x, limit 都能一次性拦住 x < 0 和 x >= limit！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. t3 = 0；2. loop: beq t1, zero, done；3. lw t4, 0(t0)；4. bgeu t4, t2, skip；5. addi t3, t3, 1；6. skip: addi t0, t0, 4；addi t1, t1, -1；j loop。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t3, zero, 0\nloop:\nbeq  t1, zero, done\nlw   t4, 0(t0)\nbgeu t4, t2, skip\naddi t3, t3, 1\nskip:\naddi t0, t0, 4\naddi t1, t1, -1\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits",
+    "rv32-branch"
+  ]
+}

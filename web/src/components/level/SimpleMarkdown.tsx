@@ -4,11 +4,10 @@ interface SimpleMarkdownProps {
   content: string;
 }
 
-/** 行内格式渲染（粗体 + 行内代码），零外部重型依赖。 */
-export function renderInline(text: string): ReactNode[] {
-  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
-  return tokens.map((part, i) => {
-    if (part.startsWith('`') && part.endsWith('`')) {
+/** 仅解析行内代码片段（供粗体内部递归复用，避免重复匹配 `**`）。 */
+function renderInlineCode(text: string): ReactNode[] {
+  return text.split(/(`[^`]+`)/g).map((part, i) => {
+    if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
       return (
         <code
           key={i}
@@ -18,11 +17,29 @@ export function renderInline(text: string): ReactNode[] {
         </code>
       );
     }
-    if (part.startsWith('**') && part.endsWith('**')) {
+    return <span key={i}>{part}</span>;
+  });
+}
+
+/** 行内格式渲染（粗体 + 嵌套行内代码），零外部重型依赖。 */
+export function renderInline(text: string): ReactNode[] {
+  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  return tokens.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
       return (
         <strong key={i} className="font-semibold text-white">
-          {part.slice(2, -2)}
+          {renderInlineCode(part.slice(2, -2))}
         </strong>
+      );
+    }
+    if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+      return (
+        <code
+          key={i}
+          className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[0.9em] text-cyan-300"
+        >
+          {part.slice(1, -1)}
+        </code>
       );
     }
     return <span key={i}>{part}</span>;

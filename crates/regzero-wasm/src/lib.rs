@@ -72,21 +72,26 @@ impl EngineCore {
                 prerequisites: meta.prerequisites,
                 concepts: meta.concepts,
                 par_instructions: meta.par_instructions,
+                par_steps: meta.par_steps,
                 passed: rec.map(|r| r.passed).unwrap_or(false),
                 unlocked: progress.is_unlocked_dag(&id, &prereqs),
                 attempts: rec.map(|r| r.attempts).unwrap_or(0),
                 best_score: rec.and_then(|r| r.best_score),
+                met_par: rec.map(|r| r.met_par).unwrap_or(false),
+                best_steps: rec.and_then(|r| r.best_steps),
             });
         }
         Ok(out)
     }
 
-    /// 加载单关完整数据（含元信息、沙盘配置、初始代码与测例摘要）。
+    /// 加载单关完整数据（含元信息、沙盘配置、初始代码与公开测例摘要）。
     pub fn load_level(&self, level_id: &str) -> Result<LevelPayload, String> {
         let bundle = self.store.load(level_id).map_err(|e| e.to_string())?;
+        let benchmark_count = bundle.config.benchmark_count();
         let tests_preview = cases_of(&bundle.config)
             .iter()
             .enumerate()
+            .filter(|(_, c)| !c.hidden)
             .map(|(i, c)| TestCasePreview::from_case(i, c))
             .collect();
         Ok(LevelPayload {
@@ -98,6 +103,7 @@ impl EngineCore {
             available_ops: bundle.config.available_ops,
             forbidden_regs: bundle.config.forbidden_regs,
             tests_preview,
+            benchmark_count,
             solution: bundle.solution,
         })
     }
@@ -170,31 +176,63 @@ impl EngineCore {
         })
     }
 
-    /// 提交代码并执行全部测例判定。
+    /// 提交代码并执行全部测例判定（支持传入动态随机种子实现 Plan B2 防打表 + 失败复现）。
     pub fn submit_code(&self, level_id: &str, code: &str) -> Result<SubmitDto, String> {
+        self.submit_code_with_seed(level_id, code, None)
+    }
+
+    pub fn submit_code_with_seed(
+        &self,
+        level_id: &str,
+        code: &str,
+        dynamic_seed: Option<u32>,
+    ) -> Result<SubmitDto, String> {
         let bundle = self.store.load(level_id).map_err(|e| e.to_string())?;
-        let instruction_count = Runner::new(bundle.config.clone(), code)
+        let expanded = bundle
+            .config
+            .expand_with_oracle(bundle.solution.as_deref(), dynamic_seed.map(|s| s as u64))?;
+        let instruction_count = Runner::new(expanded.clone(), code)
             .ok()
             .map(|r| r.words().len());
-        let verdict = regzero_core::judge(&bundle.config, code);
+        let verdict = regzero_core::judge(&expanded, code);
         Ok(verdict_to_submit_dto(
             level_id,
             verdict,
             instruction_count,
             bundle.source.meta.par_instructions,
+            bundle.source.meta.par_steps,
+            dynamic_seed,
         ))
     }
 
-    /// 启动关卡调试会话（支持传入 `case_index`，支撑「一键调试失败测例」）。
+    /// 启动关卡调试会话（支持传入 `case_index` 与 `dynamic_seed`，支撑任意公开/隐藏/随机失败测例单步排查）。
     pub fn debug_start(
         &mut self,
         level_id: &str,
         code: &str,
         case_index: Option<usize>,
     ) -> Result<MachineSnapshot, String> {
+        self.debug_start_with_seed(level_id, code, case_index, None)
+    }
+
+    pub fn debug_start_with_seed(
+        &mut self,
+        level_id: &str,
+        code: &str,
+        case_index: Option<usize>,
+        dynamic_seed: Option<u32>,
+    ) -> Result<MachineSnapshot, String> {
         let bundle = self.store.load(level_id).map_err(|e| e.to_string())?;
-        let runner = build_runner(bundle.config.clone(), code)?;
-        let case = pick_case(&bundle.config, case_index);
+        let need_expand = case_index.unwrap_or(0) >= cases_of(&bundle.config).len();
+        let cfg = if need_expand {
+            bundle
+                .config
+                .expand_with_oracle(bundle.solution.as_deref(), dynamic_seed.map(|s| s as u64))?
+        } else {
+            bundle.config
+        };
+        let runner = build_runner(cfg.clone(), code)?;
+        let case = pick_case(&cfg, case_index);
         let watch_addrs = collect_watch_addrs(&bundle.source.meta.sandbox, &case);
         let sim = runner.debug_simulator(&case);
         let snap = make_snapshot(&sim, &runner, &watch_addrs);
@@ -387,8 +425,13 @@ impl WasmEngine {
         to_json(self.core.run_sandbox(language, code, input_text))
     }
 
-    pub fn submit_code(&self, level_id: &str, code: &str) -> Result<String, JsValue> {
-        to_json(self.core.submit_code(level_id, code))
+    pub fn submit_code(
+        &self,
+        level_id: &str,
+        code: &str,
+        dynamic_seed: Option<u32>,
+    ) -> Result<String, JsValue> {
+        to_json(self.core.submit_code_with_seed(level_id, code, dynamic_seed))
     }
 
     pub fn debug_start(
@@ -396,8 +439,9 @@ impl WasmEngine {
         level_id: &str,
         code: &str,
         case_index: Option<usize>,
+        dynamic_seed: Option<u32>,
     ) -> Result<String, JsValue> {
-        to_json(self.core.debug_start(level_id, code, case_index))
+        to_json(self.core.debug_start_with_seed(level_id, code, case_index, dynamic_seed))
     }
 
     pub fn debug_start_sandbox(
@@ -499,6 +543,7 @@ fn sandbox_config_and_case(language: &str, input_text: &str) -> Result<(LevelCon
         forbidden_regs: Vec::new(),
         max_instructions: SANDBOX_MAX_INSTRUCTIONS,
         goal: Goal::Static { tests: vec![case.clone()] },
+        generated: None,
     };
     Ok((cfg, case))
 }
@@ -573,13 +618,17 @@ mod tests {
         assert!(levels[0].unlocked);
         assert!(!levels[1].unlocked);
 
-        // 2. 加载 1-4S 支线关并验证提交 + Par 达标
+        // 2. 加载 1-4S 支线关并验证提交 + 动态性能步数金牌达标（含隐藏基准测例）
         let level = engine.load_level("1-4S").unwrap();
-        assert_eq!(level.meta.par_instructions, Some(4));
+        assert_eq!(level.meta.par_steps, Some(48));
+        assert_eq!(level.benchmark_count, 12);
         let sol = level.solution.unwrap();
-        let submit = engine.submit_code("1-4S", &sol).unwrap();
+        let submit = engine.submit_code_with_seed("1-4S", &sol, Some(12345)).unwrap();
         assert!(submit.passed);
-        assert_eq!(submit.instruction_count, Some(4));
+        assert_eq!(submit.total_steps, 48);
+        assert_eq!(submit.benchmark_count, 12);
+        assert_eq!(submit.hidden_total, 14);
+        assert_eq!(submit.hidden_passed, 14);
         assert!(submit.met_par);
 
         // 3. 启动指定失败测例调试 + 单步 + 倒退

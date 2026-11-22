@@ -1,0 +1,102 @@
+{
+  "level": "1-14",
+  "language": "asm",
+  "availableOps": [
+    "jal",
+    "ret",
+    "jalr",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "blt",
+    "bge",
+    "beq",
+    "bne",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 1000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "|-7| + |5| = 12",
+        "initial": {
+          "regs": {
+            "t0": -7,
+            "t1": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 12
+          }
+        }
+      },
+      {
+        "name": "两个负数：|-15| + |-25| = 40",
+        "initial": {
+          "regs": {
+            "t0": -15,
+            "t1": -25
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 40
+          }
+        }
+      },
+      {
+        "name": "含零边界：|0| + |-9| = 9",
+        "initial": {
+          "regs": {
+            "t0": 0,
+            "t1": -9
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 9
+          }
+        }
+      },
+      {
+        "name": "两个正数：|100| + |23| = 123",
+        "initial": {
+          "regs": {
+            "t0": 100,
+            "t1": 23
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 123
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11401,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -500,
+          "max": 500
+        },
+        "t1": {
+          "min": -500,
+          "max": 500
+        }
+      }
+    }
+  }
+}

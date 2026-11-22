@@ -1,12 +1,41 @@
 {
   "level": "1-4S",
   "language": "asm",
-  "availableOps": ["add", "sub", "ecall"],
+  "availableOps": [
+    "add",
+    "sub",
+    "ecall"
+  ],
   "forbiddenRegs": [
-    "t2", "t3", "t4", "t5", "t6",
-    "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
-    "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
-    "ra", "sp", "gp", "tp"
+    "t2",
+    "t3",
+    "t4",
+    "t5",
+    "t6",
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7",
+    "s8",
+    "s9",
+    "s10",
+    "s11",
+    "a0",
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "a6",
+    "a7",
+    "ra",
+    "sp",
+    "gp",
+    "tp"
   ],
   "maxInstructions": 1000,
   "goal": {
@@ -14,24 +43,85 @@
     "tests": [
       {
         "name": "10 与 3 原地互换",
-        "initial": { "regs": { "t0": 10, "t1": 3 } },
-        "expected": { "regs": { "t0": 3, "t1": 10 } }
+        "initial": {
+          "regs": {
+            "t0": 10,
+            "t1": 3
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 3,
+            "t1": 10
+          }
+        }
       },
       {
         "name": "-12 与 25（含负数）",
-        "initial": { "regs": { "t0": -12, "t1": 25 } },
-        "expected": { "regs": { "t0": 25, "t1": -12 } }
+        "initial": {
+          "regs": {
+            "t0": -12,
+            "t1": 25
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 25,
+            "t1": -12
+          }
+        }
       },
       {
         "name": "0 与 99（含零）",
-        "initial": { "regs": { "t0": 0, "t1": 99 } },
-        "expected": { "regs": { "t0": 99, "t1": 0 } }
+        "initial": {
+          "regs": {
+            "t0": 0,
+            "t1": 99
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 99,
+            "t1": 0
+          }
+        }
       },
       {
         "name": "2000000000 与 1500000000（32 位回绕依然精确）",
-        "initial": { "regs": { "t0": 2000000000, "t1": 1500000000 } },
-        "expected": { "regs": { "t0": 1500000000, "t1": 2000000000 } }
+        "initial": {
+          "regs": {
+            "t0": 2000000000,
+            "t1": 1500000000
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 1500000000,
+            "t1": 2000000000
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10451,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t0",
+      "t1"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -500000,
+          "max": 500000
+        },
+        "t1": {
+          "min": -500000,
+          "max": 500000
+        }
+      }
+    }
   }
 }

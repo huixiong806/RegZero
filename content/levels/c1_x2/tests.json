@@ -1,0 +1,96 @@
+{
+  "level": "1-X2",
+  "language": "asm",
+  "availableOps": [],
+  "forbiddenRegs": [],
+  "maxInstructions": 10000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "2^10 mod 1000 = 24",
+        "initial": {
+          "regs": {
+            "t0": 2,
+            "t1": 10,
+            "t2": 1000
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 24
+          }
+        }
+      },
+      {
+        "name": "3^100000 mod 10007 = 2749（十万次方）",
+        "initial": {
+          "regs": {
+            "t0": 3,
+            "t1": 100000,
+            "t2": 10007
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 2749
+          }
+        }
+      },
+      {
+        "name": "12345^987654 mod 10009 = 6471（近百万次方）",
+        "initial": {
+          "regs": {
+            "t0": 12345,
+            "t1": 987654,
+            "t2": 10009
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 6471
+          }
+        }
+      },
+      {
+        "name": "7^0 mod 13 = 1（零指数边界）",
+        "initial": {
+          "regs": {
+            "t0": 7,
+            "t1": 0,
+            "t2": 13
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 1
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 19201,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t3"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 1,
+          "max": 20000
+        },
+        "t1": {
+          "min": 0,
+          "max": 500000
+        },
+        "t2": {
+          "min": 2,
+          "max": 20000
+        }
+      }
+    }
+  }
+}

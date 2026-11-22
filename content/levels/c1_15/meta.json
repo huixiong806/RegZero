@@ -1,0 +1,117 @@
+{
+  "id": "1-15",
+  "chapter": 1,
+  "order": 15,
+  "kind": "lesson",
+  "title": "压栈脱险",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-14"
+  ],
+  "concepts": [
+    "stack",
+    "sp",
+    "saved-register",
+    "call-stack"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "pipelineStages": true,
+    "allRegsToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "右侧已有一份嵌套调用代码（sum_sq 内部调用 square 两次），运行时会陷入死循环",
+    "after": "找出死循环原因并用栈指针 sp 修复它，使 t2 = t0² + t1²"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "姿态解算模块需要算平方和 `t0² + t1²`，但预置的嵌套子程序一跑起来就卡死在死循环里——返回地址 `ra` 被悄悄覆盖了！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "先点「单步」或「提交验证」揪出死循环原因，再用栈修复 `sum_sq`，使其正确算出 `t2 = t0² + t1²`。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "a0",
+      "a1",
+      "ra",
+      "sp"
+    ],
+    "regRoles": {
+      "t0": "输入 x",
+      "t1": "输入 y",
+      "t2": "输出",
+      "a0": "参0/返",
+      "a1": "参数 1",
+      "ra": "返回址",
+      "sp": "栈指针"
+    },
+    "aluOps": [
+      "+",
+      "*"
+    ],
+    "warmupPuzzle": {
+      "prompt": "先直接点「单步」或「提交验证」，盯着 ra 寄存器的变化找出死循环原因，再用栈 sp 修复它！",
+      "initial": {
+        "regs": {
+          "t0": 3,
+          "t1": 4,
+          "t2": 0,
+          "a0": 0,
+          "a1": 0,
+          "ra": 0,
+          "sp": 61440
+        }
+      },
+      "goal": {
+        "regs": {
+          "t2": 25
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "凡是内部还要调用其他子程序的「非叶子子程序」，入口第一件事必须把 ra 压到栈上，ret 前最后一件事必须把 ra 从栈里弹回！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "在 sum_sq: 开头加入：\naddi sp, sp, -4\nsw   ra, 0(sp)\n在 sum_sq 的 ret 之前加入：\nlw   ra, 0(sp)\naddi sp, sp, 4"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "mv   a0, t0\nmv   a1, t1\njal  ra, sum_sq\nmv   t2, a0\nj    done\n\nsum_sq:\naddi sp, sp, -4\nsw   ra, 0(sp)\njal  ra, square\nmv   t3, a0\nmv   a0, a1\njal  ra, square\nadd  a0, t3, a0\nlw   ra, 0(sp)\naddi sp, sp, 4\nret\n\nsquare:\nmul  a0, a0, a0\nret\n\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-registers"
+  ]
+}

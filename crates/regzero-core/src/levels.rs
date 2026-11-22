@@ -131,6 +131,10 @@ pub struct LevelUiConfig {
     pub all_regs_toggle: bool,
     /// 寄存器面板：展示「DEC / HEX」进制切换
     pub hex_toggle: bool,
+    /// 寄存器盒：展示「DEC / U32 / HEX / BIN」二进制与无符号视图切换
+    pub bin_toggle: bool,
+    /// CPU 舞台顶部 PC 栏：展示真实 16 进制 PC 字节地址（如 `0x0004 · 第 2 行`）
+    pub pc_address: bool,
     /// 寄存器面板：展示未聚焦但非零的系统寄存器（如 sp=0xF000）
     pub untracked_regs: bool,
     /// 编辑器：显示末尾只读的 `ecall` 行（默认 false 自动隐藏并在提交时无损拼回）
@@ -157,9 +161,12 @@ pub struct LevelMeta {
     /// DAG 前置依赖关卡 ID 列表
     #[serde(default)]
     pub prerequisites: Vec<String>,
-    /// 可选最优指令条数挑战指标（含程序全部机器码指令）
+    /// 可选静态代码指令条数指标（兼容旧配置；性能优化支线推荐用 `par_steps`）
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub par_instructions: Option<usize>,
+    /// 可选性能优化金牌指标：全部测例动态执行总指令步数上限
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub par_steps: Option<u64>,
     #[serde(default)]
     pub concepts: Vec<String>,
     /// 本关独立的界面与 CPU 舞台展示开关（零跨关继承，缺省项均为 false）
@@ -520,7 +527,7 @@ impl LevelStore {
         Ok(out)
     }
 
-    /// 关卡自检：用参考解跑一遍判定确认可解。
+    /// 关卡自检：用参考解跑一遍（含公开 + 固定种子隐藏基准 + 示例动态随机测例）确认可解。
     pub fn self_check(&self, id: &str) -> Result<Verdict, String> {
         let bundle = self.load(id).map_err(|e| e.to_string())?;
         let Some(solution) = &bundle.solution else {
@@ -531,7 +538,8 @@ impl LevelStore {
                 language_ext(bundle.config.language)
             ));
         };
-        Ok(judge(&bundle.config, solution))
+        let expanded = bundle.config.expand_with_oracle(Some(solution), Some(99991))?;
+        Ok(judge(&expanded, solution))
     }
 }
 

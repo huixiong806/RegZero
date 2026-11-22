@@ -53,6 +53,24 @@
           }
         },
         {
+          "id": "bltu",
+          "unlockAny": ["bltu"],
+          "cells": {
+            "op": "`bltu`",
+            "syntax": "`bltu 左, 右, 标签`",
+            "meaning": "按**无符号整数**比较，当 `左 < 右` 时跳到 `标签`"
+          }
+        },
+        {
+          "id": "bgeu",
+          "unlockAny": ["bgeu"],
+          "cells": {
+            "op": "`bgeu`",
+            "syntax": "`bgeu 左, 右, 标签`",
+            "meaning": "按**无符号整数**比较，当 `左 >= 右` 时跳到 `标签`"
+          }
+        },
+        {
           "id": "j",
           "unlockAny": ["j"],
           "cells": {

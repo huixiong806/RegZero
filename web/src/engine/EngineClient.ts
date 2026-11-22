@@ -26,9 +26,14 @@ export interface EngineClient {
 
   runCode(levelId: string, code: string, caseIndex?: number): Promise<MachineSnapshot>;
   runSandbox(language: Language, code: string, inputText?: string): Promise<MachineSnapshot>;
-  submitCode(levelId: string, code: string): Promise<SubmitDto>;
+  submitCode(levelId: string, code: string, dynamicSeed?: number): Promise<SubmitDto>;
 
-  debugStart(levelId: string, code: string, caseIndex?: number): Promise<MachineSnapshot>;
+  debugStart(
+    levelId: string,
+    code: string,
+    caseIndex?: number,
+    dynamicSeed?: number,
+  ): Promise<MachineSnapshot>;
   debugStartSandbox(language: Language, code: string, inputText?: string): Promise<MachineSnapshot>;
   debugStep(steps?: number): Promise<StepPayload>;
   debugStepBack(steps?: number): Promise<StepPayload>;

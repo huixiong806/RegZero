@@ -1,0 +1,76 @@
+{
+  "level": "1-18",
+  "language": "asm",
+  "availableOps": [],
+  "forbiddenRegs": [],
+  "maxInstructions": 10000,
+  "goal": {
+    "type": "output",
+    "tests": [
+      {
+        "name": "4 个数：3 10 -2 7 → 总和 18，最大 10",
+        "input": {
+          "text": "4 3 10 -2 7"
+        },
+        "output": {
+          "text": "18 10"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "全负数陷阱：3 -50 -12 -99 → 总和 -161，最大 -12",
+        "input": {
+          "text": "3 -50 -12 -99"
+        },
+        "output": {
+          "text": "-161 -12"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "单元素边界：1 42 → 总和 42，最大 42",
+        "input": {
+          "text": "1 42"
+        },
+        "output": {
+          "text": "42 42"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "多行输入：5 个数混有零与正负",
+        "input": {
+          "text": "5\n0 -5 100 -20 25\n"
+        },
+        "output": {
+          "text": "100 100"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11801,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkOutput": true,
+    "checkExit": true,
+    "inputs": {
+      "textStream": {
+        "kind": "intList",
+        "len": [
+          1,
+          10
+        ]
+      }
+    }
+  }
+}

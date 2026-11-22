@@ -1,0 +1,108 @@
+{
+  "level": "1-8",
+  "language": "asm",
+  "availableOps": [
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 1000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "0x1000 处：12 + 18 = 30",
+        "initial": {
+          "regs": {
+            "t0": 4096
+          },
+          "memory": {
+            "0x1000": [
+              12,
+              18,
+              0
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1008": 30
+          }
+        }
+      },
+      {
+        "name": "含负数：-25 + 40 = 15",
+        "initial": {
+          "regs": {
+            "t0": 4096
+          },
+          "memory": {
+            "0x1000": [
+              -25,
+              40,
+              0
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1008": 15
+          }
+        }
+      },
+      {
+        "name": "不同基址 0x1200：100 + 250 = 350",
+        "initial": {
+          "regs": {
+            "t0": 4608
+          },
+          "memory": {
+            "0x1200": [
+              100,
+              250,
+              0
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1208": 350
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 10801,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkMemory": [
+      {
+        "addr": "0x1008",
+        "kind": "word"
+      }
+    ],
+    "inputs": {
+      "arrays": [
+        {
+          "addr": "0x1000",
+          "addrReg": "t0",
+          "len": [
+            2,
+            2
+          ],
+          "elem": [
+            -300,
+            300
+          ],
+          "kind": "words"
+        }
+      ]
+    }
+  }
+}

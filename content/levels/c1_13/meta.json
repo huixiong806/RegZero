@@ -1,0 +1,110 @@
+{
+  "id": "1-13",
+  "chapter": 1,
+  "order": 13,
+  "kind": "lesson",
+  "title": "像素调色盘",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-12"
+  ],
+  "concepts": [
+    "bitwise",
+    "and",
+    "or",
+    "xor",
+    "li",
+    "lui"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 中是一个打包的 RGB 颜色值 0x00RRGGBB（红、绿、蓝各占 8 位）",
+    "after": "拆出三通道 t1=R、t2=G、t3=B，并将红蓝互换重新打包 0x00BBGGRR 存入 t4"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "主显示器终于点亮，但画面颜色全都发蓝发怪——老显卡把红蓝通道焊反了！需要拆开 `0x00RRGGBB` 像素并重新装成 `0x00BBGGRR`。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "从 `t0` 拆出三通道 `t1=R`、`t2=G`、`t3=B`，并把红蓝互换结果 `0x00BBGGRR` 存入 `t4`。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4"
+    ],
+    "regRoles": {
+      "t0": "原色",
+      "t1": "红 R",
+      "t2": "绿 G",
+      "t3": "蓝 B",
+      "t4": "新色"
+    },
+    "aluOps": [
+      "+"
+    ],
+    "warmupPuzzle": {
+      "prompt": "把寄存器切换到 HEX 视角，拆出 0x00RRGGBB 的三个 8 位通道，再把红蓝互换重新打包成 0x00BBGGRR！",
+      "initial": {
+        "regs": {
+          "t0": 1193046,
+          "t1": 0,
+          "t2": 0,
+          "t3": 0,
+          "t4": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 18,
+          "t2": 52,
+          "t3": 86,
+          "t4": 5649426
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "提取低 8 位用 andi x, y, 0xFF（0xFF 就是 8 个连续的 1）。先右移对齐再 andi 0xFF 就能精准剥离任意 8 位通道！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. srli t1, t0, 16; andi t1, t1, 0xFF；2. srli t2, t0, 8; andi t2, t2, 0xFF；3. andi t3, t0, 0xFF；4. slli t4, t3, 16; slli t5, t2, 8; or t4, t4, t5; or t4, t4, t1。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "srli t1, t0, 16\nandi t1, t1, 0xFF\nsrli t2, t0, 8\nandi t2, t2, 0xFF\nandi t3, t0, 0xFF\nslli t4, t3, 16\nslli t5, t2, 8\nor   t4, t4, t5\nor   t4, t4, t1"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits"
+  ]
+}

@@ -1,7 +1,13 @@
 {
   "level": "1-3",
   "language": "asm",
-  "availableOps": ["add", "sub", "addi", "mv", "ecall"],
+  "availableOps": [
+    "add",
+    "sub",
+    "addi",
+    "mv",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 1000,
   "goal": {
@@ -9,24 +15,90 @@
     "tests": [
       {
         "name": "10 与 3：差 7，互换为 3 与 10",
-        "initial": { "regs": { "t0": 10, "t1": 3 } },
-        "expected": { "regs": { "t0": 3, "t1": 10, "t2": 7 } }
+        "initial": {
+          "regs": {
+            "t0": 10,
+            "t1": 3
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 3,
+            "t1": 10,
+            "t2": 7
+          }
+        }
       },
       {
         "name": "3 与 10：差 -7，互换为 10 与 3",
-        "initial": { "regs": { "t0": 3, "t1": 10 } },
-        "expected": { "regs": { "t0": 10, "t1": 3, "t2": -7 } }
+        "initial": {
+          "regs": {
+            "t0": 3,
+            "t1": 10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 10,
+            "t1": 3,
+            "t2": -7
+          }
+        }
       },
       {
         "name": "0 与 0：零值边界",
-        "initial": { "regs": { "t0": 0, "t1": 0 } },
-        "expected": { "regs": { "t0": 0, "t1": 0, "t2": 0 } }
+        "initial": {
+          "regs": {
+            "t0": 0,
+            "t1": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": 0,
+            "t1": 0,
+            "t2": 0
+          }
+        }
       },
       {
         "name": "-20 与 -5：负数相减与互换",
-        "initial": { "regs": { "t0": -20, "t1": -5 } },
-        "expected": { "regs": { "t0": -5, "t1": -20, "t2": -15 } }
+        "initial": {
+          "regs": {
+            "t0": -20,
+            "t1": -5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t0": -5,
+            "t1": -20,
+            "t2": -15
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10301,
+    "fixedCount": 6,
+    "randomCount": 4,
+    "checkRegs": [
+      "t0",
+      "t1",
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -200,
+          "max": 200
+        },
+        "t1": {
+          "min": -200,
+          "max": 200
+        }
+      }
+    }
   }
 }

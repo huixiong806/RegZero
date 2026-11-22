@@ -2,7 +2,14 @@ import type { SubmitDto, UserProgress } from './types';
 
 const PROGRESS_KEY = 'regzero.progress.v1';
 const DRAFT_PREFIX = 'regzero.draft.v1.';
+const PINNED_SEED_PREFIX = 'regzero.pinnedSeed.v1.';
 const BRIEFING_KEY = 'regzero.briefing.v1';
+
+export interface PinnedFailure {
+  seed: number;
+  caseIndex: number;
+  caseName: string;
+}
 
 export function defaultProgress(): UserProgress {
   return {
@@ -61,6 +68,12 @@ export function recordSubmissionProgress(submit: SubmitDto): UserProgress {
   const passed = submit.passed || Boolean(prev?.passed);
   const bestScore =
     prev?.bestScore !== undefined ? Math.max(prev.bestScore, submit.score) : submit.score;
+  const bestSteps =
+    submit.passed && submit.totalSteps > 0
+      ? prev?.bestSteps !== undefined
+        ? Math.min(prev.bestSteps, submit.totalSteps)
+        : submit.totalSteps
+      : prev?.bestSteps;
 
   current.levels[submit.level] = {
     levelId: submit.level,
@@ -69,8 +82,51 @@ export function recordSubmissionProgress(submit: SubmitDto): UserProgress {
     attempts: (prev?.attempts ?? 0) + 1,
     bestScore,
     metPar: Boolean(prev?.metPar || submit.metPar),
+    bestSteps,
   };
   return saveProgress(current);
+}
+
+/** 生成 32 位正整数动态随机种子（供 Plan B2 提交期防打表抽测）。 */
+export function generateRandomSeed(): number {
+  const n = Math.floor(Math.random() * 0x7fff_fffe) + 1;
+  return n >>> 0;
+}
+
+export function loadPinnedFailure(levelId: string): PinnedFailure | null {
+  try {
+    const raw = window.localStorage.getItem(`${PINNED_SEED_PREFIX}${levelId}`);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const obj = parsed as Partial<PinnedFailure>;
+    if (
+      typeof obj.seed === 'number' &&
+      typeof obj.caseIndex === 'number' &&
+      typeof obj.caseName === 'string'
+    ) {
+      return { seed: obj.seed, caseIndex: obj.caseIndex, caseName: obj.caseName };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePinnedFailure(levelId: string, pinned: PinnedFailure): void {
+  try {
+    window.localStorage.setItem(`${PINNED_SEED_PREFIX}${levelId}`, JSON.stringify(pinned));
+  } catch {
+    // 忽略存储异常
+  }
+}
+
+export function clearPinnedFailure(levelId: string): void {
+  try {
+    window.localStorage.removeItem(`${PINNED_SEED_PREFIX}${levelId}`);
+  } catch {
+    // 忽略
+  }
 }
 
 export function updateSettings(patch: Partial<UserProgress['settings']>): UserProgress {
@@ -140,7 +196,9 @@ export function resetAllProgress(): UserProgress {
     const toRemove: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
-      if (k && k.startsWith(DRAFT_PREFIX)) toRemove.push(k);
+      if (k && (k.startsWith(DRAFT_PREFIX) || k.startsWith(PINNED_SEED_PREFIX))) {
+        toRemove.push(k);
+      }
     }
     for (const k of toRemove) {
       window.localStorage.removeItem(k);

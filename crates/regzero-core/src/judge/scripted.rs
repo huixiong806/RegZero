@@ -32,6 +32,9 @@ pub fn run(config: &LevelConfig, runner: &Runner, name: &str, args: &Value) -> V
         None => vec![TestVerdict {
             name: name.to_string(),
             passed: false,
+            steps: 0,
+            hidden: false,
+            is_random: false,
             detail: format!("本关指定了一个不存在的判定程序 `{}`（可用的是 {:?}）", name, names()),
             diffs: Vec::new(),
             failure_site: None,
@@ -76,6 +79,9 @@ fn pass(name: impl Into<String>, actual_output: Option<String>) -> TestVerdict {
     TestVerdict {
         name: name.into(),
         passed: true,
+        steps: 0,
+        hidden: false,
+        is_random: false,
         detail: "通过".to_string(),
         diffs: Vec::new(),
         failure_site: None,
@@ -87,6 +93,9 @@ fn fail(name: impl Into<String>, what: &str, expected: String, actual: String, r
     TestVerdict {
         name: name.into(),
         passed: false,
+        steps: 0,
+        hidden: false,
+        is_random: false,
         detail: format!("{}：{} 应为 {}，实际 {}", reason.describe(), what, expected, actual),
         diffs: vec![Diff { what: what.to_string(), expected, actual }],
         failure_site: Some(FailureSite {

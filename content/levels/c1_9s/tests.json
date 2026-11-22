@@ -1,0 +1,161 @@
+{
+  "level": "1-9S",
+  "language": "asm",
+  "availableOps": [
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mul",
+    "mv",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "奇数长度：[1, 2, 3, 4, 5] → [5, 4, 3, 2, 1]",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 5
+          },
+          "memory": {
+            "0x1000": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1000": [
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "name": "偶数长度：[10, 20, 30, 40, 50, 60] → [60, 50, 40, 30, 20, 10]",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 6
+          },
+          "memory": {
+            "0x1000": [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1000": [
+              60,
+              50,
+              40,
+              30,
+              20,
+              10
+            ]
+          }
+        }
+      },
+      {
+        "name": "单元素边界：[77] → [77]",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 1
+          },
+          "memory": {
+            "0x1000": [
+              77
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1000": [
+              77
+            ]
+          }
+        }
+      },
+      {
+        "name": "含负数：[-3, 0, 9, -8] → [-8, 9, 0, -3]",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 4
+          },
+          "memory": {
+            "0x1000": [
+              -3,
+              0,
+              9,
+              -8
+            ]
+          }
+        },
+        "expected": {
+          "memory": {
+            "0x1000": [
+              -8,
+              9,
+              0,
+              -3
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 10951,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkMemory": [
+      {
+        "addr": "0x1000",
+        "kind": "sameAsInput"
+      }
+    ],
+    "inputs": {
+      "arrays": [
+        {
+          "addr": "0x1000",
+          "addrReg": "t0",
+          "lenReg": "t1",
+          "len": [
+            1,
+            10
+          ],
+          "elem": [
+            -100,
+            100
+          ],
+          "kind": "words"
+        }
+      ]
+    }
+  }
+}

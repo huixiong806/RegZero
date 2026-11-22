@@ -1,7 +1,16 @@
 {
   "level": "1-7S",
   "language": "asm",
-  "availableOps": ["add", "addi", "sub", "mv", "blt", "bge", "j", "ecall"],
+  "availableOps": [
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 5000,
   "goal": {
@@ -9,24 +18,80 @@
     "tests": [
       {
         "name": "gcd(12, 18) = 6",
-        "initial": { "regs": { "t0": 12, "t1": 18 } },
-        "expected": { "regs": { "t2": 6 } }
+        "initial": {
+          "regs": {
+            "t0": 12,
+            "t1": 18
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 6
+          }
+        }
       },
       {
         "name": "gcd(48, 18) = 6",
-        "initial": { "regs": { "t0": 48, "t1": 18 } },
-        "expected": { "regs": { "t2": 6 } }
+        "initial": {
+          "regs": {
+            "t0": 48,
+            "t1": 18
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 6
+          }
+        }
       },
       {
         "name": "gcd(17, 13) = 1（互质）",
-        "initial": { "regs": { "t0": 17, "t1": 13 } },
-        "expected": { "regs": { "t2": 1 } }
+        "initial": {
+          "regs": {
+            "t0": 17,
+            "t1": 13
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 1
+          }
+        }
       },
       {
         "name": "gcd(25, 25) = 25（相等边界）",
-        "initial": { "regs": { "t0": 25, "t1": 25 } },
-        "expected": { "regs": { "t2": 25 } }
+        "initial": {
+          "regs": {
+            "t0": 25,
+            "t1": 25
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 25
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10751,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 1,
+          "max": 120
+        },
+        "t1": {
+          "min": 1,
+          "max": 120
+        }
+      }
+    }
   }
 }

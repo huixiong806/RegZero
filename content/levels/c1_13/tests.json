@@ -1,0 +1,111 @@
+{
+  "level": "1-13",
+  "language": "asm",
+  "availableOps": [
+    "and",
+    "andi",
+    "or",
+    "ori",
+    "xor",
+    "xori",
+    "slli",
+    "srli",
+    "srai",
+    "li",
+    "lui",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 1000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "0x00123456 → R=0x12, G=0x34, B=0x56, 互换=0x00563412",
+        "initial": {
+          "regs": {
+            "t0": "0x00123456"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": "0x12",
+            "t2": "0x34",
+            "t3": "0x56",
+            "t4": "0x00563412"
+          }
+        }
+      },
+      {
+        "name": "纯红 0x00FF0000 → 互换为纯蓝 0x000000FF",
+        "initial": {
+          "regs": {
+            "t0": "0x00FF0000"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": "0xFF",
+            "t2": 0,
+            "t3": 0,
+            "t4": "0x000000FF"
+          }
+        }
+      },
+      {
+        "name": "高字节有杂讯 0xAB102030 → 只保留 0x00302010",
+        "initial": {
+          "regs": {
+            "t0": "0xAB102030"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": "0x10",
+            "t2": "0x20",
+            "t3": "0x30",
+            "t4": "0x00302010"
+          }
+        }
+      },
+      {
+        "name": "全黑 0x00000000 边界",
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0,
+            "t2": 0,
+            "t3": 0,
+            "t4": 0
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11301,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1",
+      "t2",
+      "t3",
+      "t4"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "u32Bits": true
+        }
+      }
+    }
+  }
+}

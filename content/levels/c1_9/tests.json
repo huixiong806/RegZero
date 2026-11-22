@@ -1,0 +1,128 @@
+{
+  "level": "1-9",
+  "language": "asm",
+  "availableOps": [
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "4 个正数：[2, 4, 6, 8] → 20",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 4
+          },
+          "memory": {
+            "0x1000": [
+              2,
+              4,
+              6,
+              8
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 20
+          }
+        }
+      },
+      {
+        "name": "含负数：[-10, 25, -5, 30, -10] → 30",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 5
+          },
+          "memory": {
+            "0x1000": [
+              -10,
+              25,
+              -5,
+              30,
+              -10
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 30
+          }
+        }
+      },
+      {
+        "name": "单元素：[42] → 42",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 1
+          },
+          "memory": {
+            "0x1000": [
+              42
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 42
+          }
+        }
+      },
+      {
+        "name": "空序列边界：n = 0 → 0",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 0,
+            "t2": 99
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 0
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 10901,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "arrays": [
+        {
+          "addr": "0x1000",
+          "addrReg": "t0",
+          "lenReg": "t1",
+          "len": [
+            0,
+            12
+          ],
+          "elem": [
+            -100,
+            100
+          ],
+          "kind": "words"
+        }
+      ]
+    }
+  }
+}

@@ -1,12 +1,13 @@
 import { BookOpen, Lightbulb, PlayCircle, X } from 'lucide-react';
-import type { HintItem } from '../../engine/types';
+import type { BriefingSlide, HintItem } from '../../engine/types';
 import { t } from '../../i18n';
 import { HintDrawer } from './HintDrawer';
-import { SimpleMarkdown } from './SimpleMarkdown';
+import { SimpleMarkdown, renderInline } from './SimpleMarkdown';
 
 interface InfoDrawerProps {
   mode: 'lesson' | 'hints' | null;
   title: string;
+  storySummary?: BriefingSlide;
   beforeText: string;
   afterText: string;
   lessonMarkdown: string;
@@ -23,6 +24,7 @@ interface InfoDrawerProps {
 export function InfoDrawer({
   mode,
   title,
+  storySummary,
   beforeText,
   afterText,
   lessonMarkdown,
@@ -88,7 +90,12 @@ export function InfoDrawer({
                 </button>
               )}
             </div>
-            <div className="mt-1.5 text-slate-400">{t('drawer.beforePrefix')}{beforeText}</div>
+            {storySummary && (
+              <div className="mt-2 border-l-2 border-cyan-500/45 pl-2.5 leading-relaxed text-slate-300">
+                {renderInline(storySummary.text)}
+              </div>
+            )}
+            <div className="mt-2 text-slate-400">{t('drawer.beforePrefix')}{beforeText}</div>
             <div className="mt-0.5 text-cyan-300">{t('drawer.afterPrefix')}{afterText}</div>
           </div>
 

@@ -1,7 +1,16 @@
 {
   "level": "1-6",
   "language": "asm",
-  "availableOps": ["add", "addi", "sub", "mv", "blt", "bge", "j", "ecall"],
+  "availableOps": [
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 1000,
   "goal": {
@@ -9,24 +18,80 @@
     "tests": [
       {
         "name": "12 与 5：较大值为 12",
-        "initial": { "regs": { "t0": 12, "t1": 5 } },
-        "expected": { "regs": { "t2": 12 } }
+        "initial": {
+          "regs": {
+            "t0": 12,
+            "t1": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 12
+          }
+        }
       },
       {
         "name": "4 与 9：较大值为 9",
-        "initial": { "regs": { "t0": 4, "t1": 9 } },
-        "expected": { "regs": { "t2": 9 } }
+        "initial": {
+          "regs": {
+            "t0": 4,
+            "t1": 9
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 9
+          }
+        }
       },
       {
         "name": "7 与 7：两数相等",
-        "initial": { "regs": { "t0": 7, "t1": 7 } },
-        "expected": { "regs": { "t2": 7 } }
+        "initial": {
+          "regs": {
+            "t0": 7,
+            "t1": 7
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 7
+          }
+        }
       },
       {
         "name": "-3 与 -10：负数比较较大值为 -3",
-        "initial": { "regs": { "t0": -3, "t1": -10 } },
-        "expected": { "regs": { "t2": -3 } }
+        "initial": {
+          "regs": {
+            "t0": -3,
+            "t1": -10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": -3
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10601,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -200,
+          "max": 200
+        },
+        "t1": {
+          "min": -200,
+          "max": 200
+        }
+      }
+    }
   }
 }

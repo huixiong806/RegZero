@@ -3,6 +3,7 @@ import {
   Bug,
   CheckCircle2,
   FastForward,
+  Lock,
   Pause,
   Play,
   RotateCcw,
@@ -17,9 +18,14 @@ import type { EngineClient } from '../../engine/EngineClient';
 import { defaultEngineClient } from '../../engine/OnlineWasmClient';
 import {
   clearDraft,
+  clearPinnedFailure,
+  generateRandomSeed,
   loadDraft,
+  loadPinnedFailure,
   recordSubmissionProgress,
   saveDraft,
+  savePinnedFailure,
+  type PinnedFailure,
 } from '../../engine/progressStorage';
 import type {
   Language,
@@ -120,7 +126,13 @@ export function PlaygroundWorkspace({
   const [flashNonce, setFlashNonce] = useState(0);
   const [submitResult, setSubmitResult] = useState<SubmitDto | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [pinnedFailure, setPinnedFailure] = useState<PinnedFailure | null>(() =>
+    level ? loadPinnedFailure(level.id) : null,
+  );
+  const [activeCaseLabel, setActiveCaseLabel] = useState<string | undefined>(undefined);
   const pcTimerRef = useRef<number | null>(null);
+  const resetConfirmTimerRef = useRef<number | null>(null);
 
   const clearPcTimer = useCallback(() => {
     if (pcTimerRef.current !== null) {
@@ -129,7 +141,14 @@ export function PlaygroundWorkspace({
     }
   }, []);
 
-  useEffect(() => clearPcTimer, [clearPcTimer]);
+  useEffect(() => {
+    return () => {
+      clearPcTimer();
+      if (resetConfirmTimerRef.current !== null) {
+        window.clearTimeout(resetConfirmTimerRef.current);
+      }
+    };
+  }, [clearPcTimer]);
 
   const emitPlayback = useCallback(
     (
@@ -137,6 +156,7 @@ export function PlaygroundWorkspace({
       pulse: CpuPulseEvent | null,
       isPlaying: boolean,
       idx: number,
+      labelOverride?: string,
     ) => {
       if (!onPlaybackChange) return;
       if (!snap) {
@@ -148,16 +168,20 @@ export function PlaygroundWorkspace({
         active: true,
         playing: isPlaying,
         speed: playSpeed,
-        caseLabel: preview ? `测例 ${idx + 1} · ${preview.name}` : undefined,
+        caseLabel:
+          labelOverride ??
+          activeCaseLabel ??
+          (preview ? `测例 ${idx + 1} · ${preview.name}` : `测例 #${idx + 1}`),
         regs: mapSimRegsToAbi(snap.regs),
         goalRegs: preview?.expectedRegs,
         pulse,
+        pc: snap.pc,
         pcLine: snap.pcLine,
         tick: snap.tick,
         halted: snap.halted,
       });
     },
-    [level, onPlaybackChange, playSpeed],
+    [activeCaseLabel, level, onPlaybackChange, playSpeed],
   );
 
   useEffect(() => {
@@ -171,6 +195,9 @@ export function PlaygroundWorkspace({
     setInspectedMem({});
     setSubmitResult(null);
     setErrorMsg(null);
+    setConfirmReset(false);
+    setActiveCaseLabel(undefined);
+    setPinnedFailure(level ? loadPinnedFailure(level.id) : null);
     onPlaybackChange?.(null);
     void engine.debugQuit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -204,6 +231,23 @@ export function PlaygroundWorkspace({
   };
 
   const handleResetCode = () => {
+    // 已有改动时走两步确认，防止误点重置丢掉辛辛苦苦写的代码
+    if (code !== defaultCode && !confirmReset) {
+      setConfirmReset(true);
+      if (resetConfirmTimerRef.current !== null) {
+        window.clearTimeout(resetConfirmTimerRef.current);
+      }
+      resetConfirmTimerRef.current = window.setTimeout(() => {
+        setConfirmReset(false);
+        resetConfirmTimerRef.current = null;
+      }, 3500);
+      return;
+    }
+    if (resetConfirmTimerRef.current !== null) {
+      window.clearTimeout(resetConfirmTimerRef.current);
+      resetConfirmTimerRef.current = null;
+    }
+    setConfirmReset(false);
     clearDraft(draftKey);
     setCode(defaultCode);
     setErrorMsg(null);
@@ -231,15 +275,30 @@ export function PlaygroundWorkspace({
   };
 
   const startLiveSession = useCallback(
-    async (targetCaseIndex: number, playAutomatically: boolean) => {
-      setCaseIndex(targetCaseIndex);
+    async (
+      targetCaseIndex: number,
+      playAutomatically: boolean,
+      overrideSeed?: number,
+      labelOverride?: string,
+    ) => {
+      if (level && targetCaseIndex < level.testsPreview.length) {
+        setCaseIndex(targetCaseIndex);
+      }
       setBusy(true);
       setErrorMsg(null);
       try {
         clearPcTimer();
+        const seedToUse = overrideSeed ?? submitResult?.dynamicSeed ?? pinnedFailure?.seed;
         const snap = level
-          ? await engine.debugStart(level.id, code, targetCaseIndex)
+          ? await engine.debugStart(level.id, code, targetCaseIndex, seedToUse)
           : await engine.debugStartSandbox(language, code, sandboxInput);
+        const preview = level?.testsPreview[targetCaseIndex];
+        const resolvedLabel =
+          labelOverride ??
+          (preview
+            ? `测例 ${targetCaseIndex + 1} · ${preview.name}`
+            : `隐藏/随机测例 #${targetCaseIndex + 1}`);
+        setActiveCaseLabel(resolvedLabel);
         setSnapshot(snap);
         setDisplayPcLine(snap.pcLine);
         setDebugging(true);
@@ -248,7 +307,13 @@ export function PlaygroundWorkspace({
         setChangedMem({});
         setInspectedMem({});
         lastPulseRef.current = null;
-        emitPlayback(snap, null, playAutomatically && !snap.halted, targetCaseIndex);
+        emitPlayback(
+          snap,
+          null,
+          playAutomatically && !snap.halted,
+          targetCaseIndex,
+          resolvedLabel,
+        );
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : String(err));
         setDebugging(false);
@@ -258,7 +323,18 @@ export function PlaygroundWorkspace({
         setBusy(false);
       }
     },
-    [clearPcTimer, code, emitPlayback, engine, language, level, onPlaybackChange, sandboxInput],
+    [
+      clearPcTimer,
+      code,
+      emitPlayback,
+      engine,
+      language,
+      level,
+      onPlaybackChange,
+      pinnedFailure?.seed,
+      sandboxInput,
+      submitResult?.dynamicSeed,
+    ],
   );
 
   const handleStep = useCallback(
@@ -284,7 +360,7 @@ export function PlaygroundWorkspace({
             lastPulseRef.current = pulse;
             // 先把编辑器高亮停留在「正在动画执行」的当前行，待跳转胶囊抵达 PC 或周期收尾瞬间再同步翻到新行号
             setDisplayPcLine(pulse.line ?? res.pcLine);
-            const delayMs = getPcUpdateDelayMs(pulse, true, playSpeed);
+            const delayMs = getPcUpdateDelayMs(pulse, true, playSpeed, disclosure.showMemoryPanel);
             pcTimerRef.current = window.setTimeout(() => {
               setDisplayPcLine(res.pcLine);
               pcTimerRef.current = null;
@@ -304,7 +380,7 @@ export function PlaygroundWorkspace({
         setBusy(false);
       }
     },
-    [autoPlaying, caseIndex, clearPcTimer, emitPlayback, engine, playSpeed],
+    [autoPlaying, caseIndex, clearPcTimer, disclosure.showMemoryPanel, emitPlayback, engine, playSpeed],
   );
 
   const handleContinue = useCallback(async () => {
@@ -342,14 +418,16 @@ export function PlaygroundWorkspace({
       snapshot.tick === 0
         ? Math.max(40, Math.round(420 / playSpeed))
         : prevPulse
-          ? totalSequenceMs(buildStageSequence(prevPulse, true), playSpeed) +
-            Math.max(20, Math.round(260 / playSpeed))
+          ? totalSequenceMs(
+              buildStageSequence(prevPulse, true, disclosure.showMemoryPanel),
+              playSpeed,
+            ) + Math.max(20, Math.round(260 / playSpeed))
           : Math.max(80, Math.round(1200 / playSpeed));
     const id = window.setTimeout(() => {
       void handleStep('forward');
     }, delay);
     return () => window.clearTimeout(id);
-  }, [autoPlaying, busy, debugging, handleContinue, handleStep, playSpeed, snapshot]);
+  }, [autoPlaying, busy, debugging, disclosure.showMemoryPanel, handleContinue, handleStep, playSpeed, snapshot]);
 
   const handleDebugReset = async (replay = false) => {
     setBusy(true);
@@ -386,21 +464,40 @@ export function PlaygroundWorkspace({
     setBusy(true);
     setErrorMsg(null);
     setAutoPlaying(false);
+    setConfirmReset(false);
     try {
-      const res = await engine.submitCode(level.id, code);
+      // Plan B2：若有跨会话钉住的失败随机种子则复用它，直到修好通过再释放换新种子
+      const seed = pinnedFailure?.seed ?? generateRandomSeed();
+      const res = await engine.submitCode(level.id, code, seed);
       setSubmitResult(res);
       recordSubmissionProgress(res);
+
+      const firstFailed = res.tests.find((t) => !t.passed);
+      if (res.passed) {
+        clearPinnedFailure(level.id);
+        setPinnedFailure(null);
+      } else if (firstFailed?.isRandom && firstFailed.failure) {
+        const nextPinned: PinnedFailure = {
+          seed,
+          caseIndex: firstFailed.failure.caseIndex,
+          caseName: firstFailed.name,
+        };
+        savePinnedFailure(level.id, nextPinned);
+        setPinnedFailure(nextPinned);
+      }
+
       onSubmitted?.(res);
 
       // 无语法/编译错误时，在左侧芯片舞台自动播放首条（或首个失败）测例的完整脉冲动画！
       if (res.errors.length === 0) {
-        const previewIdx = res.tests.find((t) => !t.passed)?.failure?.caseIndex ?? 0;
+        const previewIdx = firstFailed?.failure?.caseIndex ?? 0;
+        const previewLabel = firstFailed?.hidden ? firstFailed.name : undefined;
         if (onPlaybackChange) {
           setBusy(false);
-          await startLiveSession(previewIdx, true);
+          await startLiveSession(previewIdx, true, seed, previewLabel);
           return;
         }
-        const snap = await engine.runCode(level.id, code, previewIdx).catch(() => null);
+        const snap = await engine.runCode(level.id, code, 0).catch(() => null);
         if (snap) {
           setSnapshot(snap);
           setChangedRegs({});
@@ -421,7 +518,8 @@ export function PlaygroundWorkspace({
     level && level.meta.sandbox.type === 'manual-cpu' ? level.meta.sandbox.regRoles : undefined;
   const errorLines = submitResult ? submitResult.errors.map((e) => e.line).filter((n) => n > 0) : [];
   const mergedMemory = { ...(snapshot?.memoryWords ?? {}), ...inspectedMem };
-  const showMemory = disclosure.showMemoryPanel && (!level || Object.keys(mergedMemory).length > 0);
+  const showMemory =
+    disclosure.showMemoryPanel && (!level || debugging || Object.keys(mergedMemory).length > 0);
   const showRegsPanel = !hideRegisterPanel && (!level || snapshot !== null);
   const showAdvancedControls = !level || disclosure.showDebugControls;
 
@@ -436,7 +534,7 @@ export function PlaygroundWorkspace({
               <>
                 <span className="text-[11px] text-slate-500">可用指令</span>
                 {level.availableOps
-                  .filter((op) => op !== 'ecall')
+                  .filter((op) => disclosure.showEcallSuffix || op !== 'ecall')
                   .map((op) => (
                     <span
                       key={op}
@@ -522,13 +620,43 @@ export function PlaygroundWorkspace({
             <button
               type="button"
               onClick={handleResetCode}
-              title="重置初始代码"
-              className="rounded-lg border border-slate-800 bg-slate-950 p-1.5 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+              title={confirmReset ? '再次点击将清空当前代码并恢复初始模板' : '重置初始代码'}
+              className={`inline-flex items-center gap-1 rounded-lg border transition ${
+                confirmReset
+                  ? 'border-rose-400 bg-rose-500/20 px-2 py-1 text-[11px] font-bold text-rose-200 hover:bg-rose-500/30'
+                  : 'border-slate-800 bg-slate-950 p-1.5 text-slate-500 hover:bg-slate-800 hover:text-slate-200'
+              }`}
             >
               <RotateCcw className="h-3.5 w-3.5" />
+              {confirmReset && <span>确认重置？</span>}
             </button>
           </div>
         </div>
+
+        {/* 跨会话钉住的随机失败测例提示条（退出重进依然可一键复现单步排查） */}
+        {level && pinnedFailure && !submitResult?.passed && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/30 bg-amber-950/25 px-3 py-1.5 text-xs text-amber-200">
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-amber-400" />
+              已锁定上次未通过的随机点（{pinnedFailure.caseName}），修好并通过前始终可复现
+            </span>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void startLiveSession(
+                  pinnedFailure.caseIndex,
+                  false,
+                  pinnedFailure.seed,
+                  pinnedFailure.caseName,
+                )
+              }
+              className="inline-flex items-center gap-1 rounded-md border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-100 hover:bg-amber-500/25 disabled:opacity-50"
+            >
+              <Bug className="h-3 w-3" /> 单步复现
+            </button>
+          </div>
+        )}
 
         {/* 阶段过渡轻引导 */}
         {guideHint && (
@@ -661,7 +789,10 @@ export function PlaygroundWorkspace({
         result={submitResult}
         disclosure={disclosure}
         canReplayCase={Boolean(onPlaybackChange)}
-        onDebugCase={(idx) => void startLiveSession(idx, true)}
+        onDebugCase={(idx, seed) => {
+          const targetTest = submitResult?.tests.find((t) => (t.failure?.caseIndex ?? -1) === idx);
+          void startLiveSession(idx, true, seed, targetTest?.hidden ? targetTest.name : undefined);
+        }}
       />
 
       {!level && (

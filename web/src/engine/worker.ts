@@ -70,10 +70,17 @@ async function dispatch(req: WorkerRequest): Promise<unknown> {
         engine.run_sandbox(asString(p.language, 'asm'), asString(p.code), asString(p.inputText)),
       );
     case 'submitCode':
-      return JSON.parse(engine.submit_code(asString(p.levelId), asString(p.code)));
+      return JSON.parse(
+        engine.submit_code(asString(p.levelId), asString(p.code), asOptionalNumber(p.dynamicSeed)),
+      );
     case 'debugStart':
       return JSON.parse(
-        engine.debug_start(asString(p.levelId), asString(p.code), asOptionalNumber(p.caseIndex)),
+        engine.debug_start(
+          asString(p.levelId),
+          asString(p.code),
+          asOptionalNumber(p.caseIndex),
+          asOptionalNumber(p.dynamicSeed),
+        ),
       );
     case 'debugStartSandbox':
       return JSON.parse(

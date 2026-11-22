@@ -1,0 +1,76 @@
+{
+  "level": "1-X1",
+  "language": "asm",
+  "availableOps": [],
+  "forbiddenRegs": [],
+  "maxInstructions": 20000,
+  "goal": {
+    "type": "output",
+    "tests": [
+      {
+        "name": "多位数解码：3A2B12C",
+        "input": {
+          "text": "3A2B12C"
+        },
+        "output": {
+          "text": "AAABBCCCCCCCCCCCC"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "长连段：1R15Z2!",
+        "input": {
+          "text": "1R15Z2!"
+        },
+        "output": {
+          "text": "RZZZZZZZZZZZZZZZ!!"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "含空格与符号：4-3 5*1+",
+        "input": {
+          "text": "4-3 5*1+"
+        },
+        "output": {
+          "text": "----   *****+"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      },
+      {
+        "name": "20 位长脉冲：20#",
+        "input": {
+          "text": "20#"
+        },
+        "output": {
+          "text": "####################"
+        },
+        "expected": {
+          "exitCode": 0
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 19101,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkOutput": true,
+    "checkExit": true,
+    "inputs": {
+      "textStream": {
+        "kind": "rle",
+        "len": [
+          2,
+          6
+        ]
+      }
+    }
+  }
+}

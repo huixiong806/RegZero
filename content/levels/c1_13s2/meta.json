@@ -1,0 +1,105 @@
+{
+  "id": "1-13S2",
+  "chapter": 1,
+  "order": 13.6,
+  "kind": "challenge",
+  "title": "独行数字",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-13"
+  ],
+  "parSteps": 550,
+  "concepts": [
+    "xor-cancel"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 起存有 t1 个整数（t1 为奇数）：除 1 个数外，其余均成对出现两次",
+    "after": "用 O(n) 单趟扫描找出那个唯一落单的数，存入 t2"
+  },
+  "briefing": [
+    {
+      "tag": "硬核支线 · 丢失备份",
+      "text": "双冗余内存区发生单点丢失：除 1 条编号外，其余所有编号都成对出现两次。内存空间吃紧，必须一趟扫完！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "`t0` 起存有 `t1` 个整数（奇数个），单趟扫描找出唯一落单的数存入 `t2`。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "首地址",
+      "t1": "个数 n",
+      "t2": "落单数",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+"
+    ],
+    "warmupPuzzle": {
+      "prompt": "在打乱顺序的数组中找出唯一未成对出现的数存入 t2，并冲击单趟极速金牌！",
+      "initial": {
+        "regs": {
+          "t0": 4096,
+          "t1": 5,
+          "t2": 0,
+          "t3": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t2": 9
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "因为 (7 ^ 9 ^ 3 ^ 7 ^ 3) = (7 ^ 7) ^ (3 ^ 3) ^ 9 = 0 ^ 0 ^ 9 = 9，只需从头到尾把每个元素依次 xor 进 t2！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. addi t2, zero, 0；2. loop: beq t1, zero, done；3. lw t3, 0(t0)；4. xor t2, t2, t3；5. addi t0, t0, 4；6. addi t1, t1, -1；7. j loop；8. done:。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t2, zero, 0\nloop:\nbeq  t1, zero, done\nlw   t3, 0(t0)\nxor  t2, t2, t3\naddi t0, t0, 4\naddi t1, t1, -1\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits",
+    "rv32-memory"
+  ]
+}

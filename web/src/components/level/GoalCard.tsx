@@ -1,10 +1,24 @@
-import { ArrowLeft, ArrowRight, Award, BookOpen, CheckCircle2, Flame, Layers, Lightbulb, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Award,
+  BookOpen,
+  CheckCircle2,
+  Flame,
+  Layers,
+  Lightbulb,
+  Sparkles,
+  Trophy,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { LevelMeta, LevelSummary } from '../../engine/types';
 
 interface GoalCardProps {
   meta: LevelMeta;
   passed: boolean;
+  metPar?: boolean;
+  bestSteps?: number;
+  benchmarkCount?: number;
   justPassed: boolean;
   nextMain?: LevelSummary;
   nextSide?: LevelSummary;
@@ -28,6 +42,9 @@ const KIND_STYLE = {
 export function GoalCard({
   meta,
   passed,
+  metPar = false,
+  bestSteps,
+  benchmarkCount,
   justPassed,
   nextMain,
   nextSide,
@@ -41,7 +58,13 @@ export function GoalCard({
   const KindIcon = badge.icon;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-slate-800 bg-slate-900/90 px-3.5 py-2.5">
+    <div
+      className={`flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border px-3.5 py-2.5 transition ${
+        metPar
+          ? 'border-amber-400/60 bg-gradient-to-r from-amber-950/30 via-slate-900/95 to-slate-900/90 shadow-[0_0_20px_rgba(251,191,36,0.14)]'
+          : 'border-slate-800 bg-slate-900/90'
+      }`}
+    >
       {/* 左：返回 + 关卡标题 + 类型/Par 徽章 */}
       <div className="flex flex-wrap items-center gap-2">
         <Link
@@ -60,13 +83,39 @@ export function GoalCard({
           <KindIcon className="h-3 w-3" /> {badge.label}
         </span>
 
-        {meta.parInstructions !== undefined && (
+        {meta.parSteps !== undefined ? (
+          metPar ? (
+            <span
+              title={
+                benchmarkCount
+                  ? `已达成性能金牌（${benchmarkCount} 组固定基准测例总步数 ≤${meta.parSteps}）`
+                  : '已达成性能金牌'
+              }
+              className="inline-flex items-center gap-1 rounded-full border border-amber-400/80 bg-amber-400/20 px-2.5 py-0.5 font-mono text-[11px] font-bold text-amber-200 shadow-[0_0_12px_rgba(251,191,36,0.28)]"
+            >
+              <Trophy className="h-3 w-3 text-amber-300" />
+              性能金牌{bestSteps !== undefined ? ` · ${bestSteps}/${meta.parSteps} 步` : ''}
+            </span>
+          ) : (
+            <span
+              title={
+                benchmarkCount
+                  ? `金牌条件：全部 ${benchmarkCount} 组固定基准测例的动态执行总步数 ≤ ${meta.parSteps} 步`
+                  : `金牌条件：基准测例总步数 ≤ ${meta.parSteps} 步`
+              }
+              className="inline-flex items-center gap-1 rounded-full border border-amber-500/35 bg-amber-950/30 px-2 py-0.5 font-mono text-[11px] text-amber-300"
+            >
+              <Award className="h-3 w-3" />
+              {benchmarkCount ? `基准 ${benchmarkCount} 组 ` : ''}≤{meta.parSteps} 步
+            </span>
+          )
+        ) : meta.parInstructions !== undefined ? (
           <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/35 bg-amber-950/30 px-2 py-0.5 font-mono text-[11px] text-amber-300">
             <Award className="h-3 w-3" /> ≤{meta.parInstructions}
           </span>
-        )}
+        ) : null}
 
-        {passed && !justPassed && (
+        {passed && !metPar && !justPassed && (
           <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-label="已通关" />
         )}
       </div>

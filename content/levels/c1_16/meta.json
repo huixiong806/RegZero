@@ -1,0 +1,110 @@
+{
+  "id": "1-16",
+  "chapter": 1,
+  "order": 16,
+  "kind": "practice",
+  "title": "镜中阶乘",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-15"
+  ],
+  "concepts": [
+    "recursion"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "pipelineStages": true,
+    "allRegsToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 中是一个非负整数 n（0 <= n <= 12）",
+    "after": "编写递归子程序 fact(a0) 计算阶乘 n!，把结果存入 t1（规定 0! = 1）"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "星图航线校验需要计算组合阶乘 `n!`。既然子程序能调用别的子程序、又能靠栈保护现场——它当然也能**调用自己**！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "输入 `t0 = n`（`0 <= n <= 12`），编写递归子程序 `fact` 算出 `n!` 存入 `t1`（规定 `0! = 1`）。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "a0",
+      "ra",
+      "sp",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "输入 n",
+      "t1": "输出 n!",
+      "a0": "参/返",
+      "ra": "返回址",
+      "sp": "栈指针",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "*",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "自己调用自己算出 n!（0! = 1）。想清楚每次递归前需要把哪些值压进栈，才不会被下层调用覆盖！",
+      "initial": {
+        "regs": {
+          "t0": 5,
+          "t1": 0,
+          "a0": 0,
+          "ra": 0,
+          "sp": 61440,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 120
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "fact(0) = 1，fact(1) = 1；当 a0 > 1 时：压栈 ra 与 a0 → a0 减 1 → jal ra, fact → 弹栈取回原来的 n 到 t2、恢复 ra → a0 = a0 * t2 → ret。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. fact: addi t2, zero, 1; bge t2, a0, base（1 >= a0 时返回 1）；2. addi sp, sp, -8; sw ra, 4(sp); sw a0, 0(sp)；3. addi a0, a0, -1; jal ra, fact；4. lw t2, 0(sp); lw ra, 4(sp); addi sp, sp, 8；5. mul a0, a0, t2; ret；6. base: addi a0, zero, 1; ret。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "mv   a0, t0\njal  ra, fact\nmv   t1, a0\nj    done\n\nfact:\naddi t2, zero, 1\nbge  t2, a0, fact_base\naddi sp, sp, -8\nsw   ra, 4(sp)\nsw   a0, 0(sp)\naddi a0, a0, -1\njal  ra, fact\nlw   t2, 0(sp)\nlw   ra, 4(sp)\naddi sp, sp, 8\nmul  a0, a0, t2\nret\nfact_base:\naddi a0, zero, 1\nret\n\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func"
+  ]
+}

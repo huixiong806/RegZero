@@ -1,0 +1,111 @@
+{
+  "id": "1-18",
+  "chapter": 1,
+  "order": 18,
+  "kind": "lesson",
+  "title": "呼叫系统",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-17"
+  ],
+  "concepts": [
+    "syscall",
+    "ecall",
+    "reg-hardware-id"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "pcAddress": true,
+    "pipelineStages": true,
+    "allRegsToggle": true,
+    "ecallSuffix": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "输入流先给出正整数 n，接着给出 n 个有符号整数（用 ecall 读取与打印）",
+    "after": "按「总和 空格 最大值」格式输出统计结果，并调用 ecall (a7=0) 正常退出"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "零号机的迷你系统内核终于苏醒！以前每关底部自动隐藏的 **`ecall`** 现在彻底交到你手里——通过系统调用向内核借用整数读写服务，完成整机遥测自检。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "通过系统调用读入正整数 `n` 与随后 `n` 个有符号整数，输出「总和 空格 最大值」并正常退出。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "a0",
+      "a7",
+      "t0",
+      "t1",
+      "t2",
+      "zero"
+    ],
+    "regRoles": {
+      "a0": "参数/值",
+      "a7": "调用号",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+"
+    ],
+    "warmupPuzzle": {
+      "prompt": "用 ecall 读入 n 与 n 个有符号整数（注意可能全为负数），输出「总和 最大值」，最后以 a7 = 0 退出！",
+      "initial": {
+        "regs": {
+          "a0": 0,
+          "a7": 4,
+          "t0": 0,
+          "t1": 0,
+          "t2": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "a7": 0
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 0
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "1. 用 a7=4 读 n 到 t0；2. 用 a7=4 读第 1 个数，同时初始化总和 t1 与最大值 t2，t0 减 1；3. 循环读剩下 t0 个数更新 t1、t2；4. 依次用 a7=2 打印 t1、a7=1 打印空格 32、a7=2 打印 t2；5. a7=0, a0=0, ecall 退出！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "记得在循环里比较最大值：blt a0, t2, skip; mv t2, a0; skip:。别忘了最后必须写 addi a7, zero, 0; addi a0, zero, 0; ecall，否则程序不会正常停机！"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi a7, zero, 4\necall\nmv   t0, a0\necall\nmv   t1, a0\nmv   t2, a0\naddi t0, t0, -1\nloop:\nbeq  t0, zero, print\naddi a7, zero, 4\necall\nadd  t1, t1, a0\nblt  a0, t2, skip\nmv   t2, a0\nskip:\naddi t0, t0, -1\nj    loop\nprint:\nmv   a0, t1\naddi a7, zero, 2\necall\naddi a0, zero, 32\naddi a7, zero, 1\necall\nmv   a0, t2\naddi a7, zero, 2\necall\naddi a0, zero, 0\naddi a7, zero, 0\necall"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-registers"
+  ]
+}

@@ -3,12 +3,19 @@
   "chapter": 1,
   "order": 3,
   "kind": "lesson",
-  "title": "减法与覆盖：sub、mv 与暂存槽",
+  "title": "借槽互换",
   "mode": "online",
   "allowLocalFile": true,
   "language": "asm",
-  "prerequisites": ["1-2"],
-  "concepts": ["sub", "mv", "overwrite", "temp-register"],
+  "prerequisites": [
+    "1-2"
+  ],
+  "concepts": [
+    "sub",
+    "mv",
+    "overwrite",
+    "temp-register"
+  ],
   "ui": {
     "immediatePort": true
   },
@@ -18,43 +25,69 @@
   },
   "briefing": [
     {
-      "tag": "核心特性",
-      "text": "往寄存器里写入新数值时，原来的旧值会立刻消失——这叫做**覆盖写**。"
+      "tag": "任务背景",
+      "text": "左右两路传感线接反了！需要记录两路读数的差值，再把 `t0` 与 `t1` 里的数值对调回正位。"
     },
     {
-      "tag": "本关陷阱",
-      "text": "如果直接把 `t1` 复制进 `t0`，`t0` 原来的数就丢了！用空闲的 `t3` 当**暂存槽**先备份，就能安全完成交换。"
+      "tag": "小心覆盖写",
+      "text": "往寄存器写入新值时，旧值会立刻消失——直接把 `t1` 放进 `t0` 会把原数盖丢！先借空闲的 `t3` 暂存一下就能安全互换。"
     },
     {
       "tag": "通关目标",
-      "text": "算出 `t2 = t0 - t1`，并把 `t0` 和 `t1` 的值互相交换。"
+      "text": "算出 `t2 = t0 - t1`，并交换 `t0` 与 `t1` 的值。"
     }
   ],
   "sandbox": {
     "type": "manual-cpu",
-    "modules": ["regs", "constants", "alu"],
+    "modules": [
+      "regs",
+      "constants",
+      "alu"
+    ],
     "recordToAsm": true,
-    "focusRegs": ["t0", "t1", "t2", "t3"],
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3"
+    ],
     "regRoles": {
-      "t0": "输入 A",
-      "t1": "输入 B",
-      "t2": "差值",
-      "t3": "暂存槽"
+      "t0": "输入/互换",
+      "t1": "输入/互换",
+      "t2": "差值"
     },
     "constantCards": [
-      { "label": "0", "value": 0, "kind": "immediate" }
+      {
+        "label": "0",
+        "value": 0,
+        "kind": "immediate"
+      }
     ],
-    "aluOps": ["+", "-"],
+    "aluOps": [
+      "+",
+      "-"
+    ],
     "allowCopy": false,
     "warmupPuzzle": {
       "prompt": "先算 t0 - t1 放入 t2，再借助空闲的 t3 把 t0(10) 与 t1(3) 的值互换。",
       "initial": {
-        "regs": { "t0": 10, "t1": 3, "t2": 0, "t3": 0 }
+        "regs": {
+          "t0": 10,
+          "t1": 3,
+          "t2": 0,
+          "t3": 0
+        }
       },
       "goal": {
-        "regs": { "t0": 3, "t1": 10, "t2": 7 }
+        "regs": {
+          "t0": 3,
+          "t1": 10,
+          "t2": 7
+        }
       },
-      "guards": ["warnOverwriteLostValue"]
+      "guards": [
+        "warnOverwriteLostValue"
+      ]
     }
   },
   "editor": {
@@ -62,9 +95,24 @@
     "readonlySuffix": 1
   },
   "hints": [
-    { "level": 1, "type": "diagram", "content": "先算完 t2 = t0 - t1 再做交换，否则换完之后再减符号会反。" },
-    { "level": 2, "type": "steps", "content": "1. sub t2, t0, t1；2. 用 mv 把 t0 备份到 t3；3. 把 t1 放进 t0；4. 把 t3 放进 t1。" },
-    { "level": 3, "type": "snippet", "content": "sub t2, t0, t1\nmv  t3, t0\nmv  t0, t1\nmv  t1, t3" }
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "先算完 t2 = t0 - t1 再做交换，否则换完之后再减符号会反。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. sub t2, t0, t1；2. 用 mv 把 t0 备份到 t3；3. 把 t1 放进 t0；4. 把 t3 放进 t1。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "sub t2, t0, t1\nmv  t3, t0\nmv  t0, t1\nmv  t1, t3"
+    }
   ],
-  "wikiRefs": ["rv32-registers", "rv32-arithmetic"]
+  "wikiRefs": [
+    "rv32-registers",
+    "rv32-arithmetic"
+  ]
 }

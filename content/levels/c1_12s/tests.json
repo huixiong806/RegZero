@@ -1,0 +1,150 @@
+{
+  "level": "1-12S",
+  "language": "asm",
+  "availableOps": [
+    "lw",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "bltu",
+    "bgeu",
+    "blt",
+    "bge",
+    "beq",
+    "bne",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "混合筛选（limit=100）：[-5, 0, 42, 99, 100, -1] → 3 个",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 6,
+            "t2": 100
+          },
+          "memory": {
+            "0x1000": [
+              -5,
+              0,
+              42,
+              99,
+              100,
+              -1
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 3
+          }
+        }
+      },
+      {
+        "name": "全部合格（limit=50）：[0, 1, 10, 25, 49, 12, 33, 48] → 8 个",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 8,
+            "t2": 50
+          },
+          "memory": {
+            "0x1000": [
+              0,
+              1,
+              10,
+              25,
+              49,
+              12,
+              33,
+              48
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 8
+          }
+        }
+      },
+      {
+        "name": "全部越界（limit=10）：[-100, -1, 10, 11, 999] → 0 个",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 5,
+            "t2": 10
+          },
+          "memory": {
+            "0x1000": [
+              -100,
+              -1,
+              10,
+              11,
+              999
+            ]
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 0
+          }
+        }
+      },
+      {
+        "name": "空数组边界：n = 0 → 0 个",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 0,
+            "t2": 10,
+            "t3": 7
+          }
+        },
+        "expected": {
+          "regs": {
+            "t3": 0
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11251,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t3"
+    ],
+    "inputs": {
+      "regs": {
+        "t2": {
+          "min": 10,
+          "max": 120
+        }
+      },
+      "arrays": [
+        {
+          "addr": "0x1000",
+          "addrReg": "t0",
+          "lenReg": "t1",
+          "len": [
+            1,
+            10
+          ],
+          "elem": [
+            -60,
+            160
+          ],
+          "kind": "words"
+        }
+      ]
+    }
+  }
+}

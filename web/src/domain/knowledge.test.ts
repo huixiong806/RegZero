@@ -158,15 +158,21 @@ describe('domain/knowledge', () => {
     expect(minimal.showPipelineStages).toBe(false);
     expect(minimal.showDebugControls).toBe(false);
     expect(minimal.showEcallSuffix).toBe(false);
+    expect(minimal.showBinToggle).toBe(false);
+    expect(minimal.showPcAddress).toBe(false);
 
     const custom = resolveLevelUiDisclosure({
       immediatePort: true,
       jumpRail: true,
       pipelineStages: true,
+      binToggle: true,
+      pcAddress: true,
     });
     expect(custom.showImmediatePort).toBe(true);
     expect(custom.showJumpRail).toBe(true);
     expect(custom.showPipelineStages).toBe(true);
+    expect(custom.showBinToggle).toBe(true);
+    expect(custom.showPcAddress).toBe(true);
     expect(custom.showMemoryPanel).toBe(false);
     expect(custom.showDebugControls).toBe(false);
   });

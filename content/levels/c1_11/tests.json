@@ -1,0 +1,98 @@
+{
+  "level": "1-11",
+  "language": "asm",
+  "availableOps": [
+    "slli",
+    "srli",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 1000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "t0 = 12 → ×8=96, ÷4=3, 高8位=0",
+        "initial": {
+          "regs": {
+            "t0": 12
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 96,
+            "t2": 3,
+            "t3": 0
+          }
+        }
+      },
+      {
+        "name": "t0 = 0x12000010 → 提取最高字节 0x12 (18)",
+        "initial": {
+          "regs": {
+            "t0": "0x12000010"
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": "0x90000080",
+            "t2": "0x04800004",
+            "t3": 18
+          }
+        }
+      },
+      {
+        "name": "t0 = 25 → 25÷4 向下取整为 6",
+        "initial": {
+          "regs": {
+            "t0": 25
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 200,
+            "t2": 6,
+            "t3": 0
+          }
+        }
+      },
+      {
+        "name": "t0 = 0 边界",
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0,
+            "t2": 0,
+            "t3": 0
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11101,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 0,
+          "max": 100000000
+        }
+      }
+    }
+  }
+}

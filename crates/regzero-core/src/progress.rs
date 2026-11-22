@@ -28,6 +28,12 @@ pub struct LevelProgress {
     pub attempts: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub best_score: Option<u32>,
+    /// 是否达成性能金牌（`parSteps` 或 `parInstructions`）
+    #[serde(default)]
+    pub met_par: bool,
+    /// 历史最优基准总步数
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub best_steps: Option<u64>,
 }
 
 /// 全局存档。

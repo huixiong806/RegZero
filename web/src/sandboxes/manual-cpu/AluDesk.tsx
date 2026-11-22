@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { CornerDownRight, HardDrive, RotateCcw, Zap } from 'lucide-react';
 import type { ManualCpuAluOp, ManualCpuSandboxConfig } from '../../engine/types';
 import {
@@ -9,6 +9,7 @@ import {
 } from './datapathTimeline';
 import type { SourceOperand } from './model';
 import type { CpuPulseEvent, PulseSource } from './pulseModel';
+import { calcPillWidth, formatDatapathValue, type RegRadix } from './radixFormat';
 
 export const OPERAND_DRAG_MIME = 'application/x-rz-operand';
 export const ALU_RESULT_DRAG_MIME = 'application/x-rz-alu-result';
@@ -26,7 +27,11 @@ interface AluDeskProps {
   pulse?: CpuPulseEvent | null;
   activeStage: DatapathStage;
   speed?: PlaybackSpeed;
+  radix?: RegRadix;
   memoryUnlocked: boolean;
+  aluBoxRef?: RefObject<HTMLDivElement | null>;
+  memStageRef?: RefObject<HTMLDivElement | null>;
+  wbBoxRef?: RefObject<HTMLDivElement | null>;
   showStageNames?: boolean;
   playbackMode?: boolean;
   onSelectSlot: (slot: ActiveSlot) => void;
@@ -52,18 +57,32 @@ function parseDragPayload(raw: string): SourceOperand | null {
 function slotLabel(
   operand: SourceOperand | null,
   regs: Record<string, number>,
+  radix: RegRadix,
 ): { top: string; val: string; isConst: boolean } {
   if (!operand) return { top: '输入', val: '?', isConst: false };
   if (operand.kind === 'reg') {
-    return { top: operand.name, val: String(regs[operand.name] ?? 0), isConst: false };
+    return {
+      top: operand.name,
+      val: formatDatapathValue(regs[operand.name] ?? 0, radix),
+      isConst: false,
+    };
   }
-  return { top: `#${operand.card.label}`, val: String(operand.card.value), isConst: true };
+  return {
+    top: `#${operand.card.label}`,
+    val: formatDatapathValue(operand.card.value, radix),
+    isConst: true,
+  };
 }
 
-function pulseSourceLabel(src: PulseSource | undefined): { top: string; val: string; isConst: boolean } {
+function pulseSourceLabel(
+  src: PulseSource | undefined,
+  radix: RegRadix,
+): { top: string; val: string; isConst: boolean } {
   if (!src) return { top: '输入', val: '—', isConst: false };
-  if (src.kind === 'reg') return { top: src.name, val: String(src.value), isConst: false };
-  return { top: '立即数', val: String(src.value), isConst: true };
+  if (src.kind === 'reg') {
+    return { top: src.name, val: formatDatapathValue(src.value, radix), isConst: false };
+  }
+  return { top: '立即数', val: formatDatapathValue(src.value, radix), isConst: true };
 }
 
 /**
@@ -81,7 +100,11 @@ export function AluDesk({
   pulse = null,
   activeStage,
   speed = 1,
+  radix = 'dec',
   memoryUnlocked,
+  aluBoxRef,
+  memStageRef,
+  wbBoxRef,
   showStageNames = false,
   playbackMode = false,
   onSelectSlot,
@@ -96,21 +119,25 @@ export function AluDesk({
   const ord = stageOrder(activeStage);
 
   const isAluOrMemPulse =
-    pulse?.kind === 'alu' || pulse?.kind === 'load' || pulse?.kind === 'store';
+    pulse?.kind === 'alu' ||
+    pulse?.kind === 'copy' ||
+    pulse?.kind === 'load' ||
+    pulse?.kind === 'store';
   const isFlowPulse = pulse?.kind === 'branch' || pulse?.kind === 'jump';
   const inExecute = activeStage === 'execute';
   const inMemory = activeStage === 'memory';
   const inWriteback = activeStage === 'writeback';
   const passedExecute = ord >= 3;
-  const arrivedAtOutput = ord >= 4;
+  // 写回阶段（ord >= 5）数据胶囊抵达底部存入槽瞬间才点亮「存入」新值，避免在访存阶段提前剧透读出值
+  const arrivedAtOutput = ord >= 5;
 
   // 演示模式下，等取数胶囊沿竖向总线滑抵输入引脚（进入 execute）瞬间再点亮引脚数值，避免瞬移穿帮
   const leftView = playbackMode
-    ? pulseSourceLabel(ord >= 3 && (isAluOrMemPulse || isFlowPulse) ? pulse?.leftSource : undefined)
-    : slotLabel(left, regs);
+    ? pulseSourceLabel(ord >= 3 && (isAluOrMemPulse || isFlowPulse) ? pulse?.leftSource : undefined, radix)
+    : slotLabel(left, regs, radix);
   const rightView = playbackMode
-    ? pulseSourceLabel(ord >= 3 && (isAluOrMemPulse || isFlowPulse) ? pulse?.rightSource : undefined)
-    : slotLabel(right, regs);
+    ? pulseSourceLabel(ord >= 3 && (isAluOrMemPulse || isFlowPulse) ? pulse?.rightSource : undefined, radix)
+    : slotLabel(right, regs, radix);
 
   // 演示模式下，等绿色结果胶囊从梯形底部滑出并抵达存入槽（writeback）瞬间再点亮存入槽
   const displayDest = playbackMode
@@ -167,18 +194,30 @@ export function AluDesk({
 
   const isRealMemOp = pulse?.kind === 'load' || pulse?.kind === 'store';
   const showMemoryStage = memoryUnlocked || isRealMemOp;
-  // 与 datapathTimeline execute 单一真源精确接力：前半段双输入滑入芯片，后半段绿色结果滑出到底部存入槽
+  // 与 datapathTimeline 单一真源精确接力：前半段双输入滑入芯片，后半段结果/地址滑出到底口
   const inDur = `${getStageSeconds('execute', speed, 0.48).toFixed(2)}s`;
-  const outDur = `${getStageSeconds('execute', speed, 0.5).toFixed(2)}s`;
-  const memAddrHex =
-    pulse?.memAddr !== undefined
-      ? `0x${(pulse.memAddr >>> 0).toString(16).toUpperCase().padStart(4, '0')}`
-      : '';
+  const outDur = `${getStageSeconds('execute', speed, 0.52).toFixed(2)}s`;
+  const memInDur = `${getStageSeconds('memory', speed, 0.48).toFixed(2)}s`;
+  const memOutDur = `${getStageSeconds('memory', speed, 0.52).toFixed(2)}s`;
+  const memBypassDur = `${getStageSeconds('memory', speed, 0.45).toFixed(2)}s`;
+  const leftPillText = pulse?.leftSource ? formatDatapathValue(pulse.leftSource.value, radix) : '';
+  const rightPillText = pulse?.rightSource ? formatDatapathValue(pulse.rightSource.value, radix) : '';
+  const aluOutText =
+    pulse?.newDestVal !== undefined ? formatDatapathValue(pulse.newDestVal, radix) : '';
+  const memAddrText =
+    pulse?.memAddr !== undefined ? formatDatapathValue(pulse.memAddr, radix) : '';
+  const memValText = formatDatapathValue(pulse?.memVal ?? 0, radix);
+  const leftPillW = calcPillWidth(leftPillText, 36);
+  const rightPillW = calcPillWidth(rightPillText, 36);
+  const aluOutPillW = calcPillWidth(aluOutText, 40);
+  const memAddrPillW = calcPillWidth(memAddrText, 44);
+  const memValPillW = calcPillWidth(memValText, 40);
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-0">
       {/* 3. 执行单元（固定几何高度，动画全程绝不增删区块，杜绝上下跳动） */}
       <div
+        ref={aluBoxRef}
         className={`rounded-2xl border bg-slate-950/90 px-3 pt-2.5 pb-1.5 transition ${
           inExecute
             ? 'border-cyan-400/75 shadow-[0_0_20px_rgba(34,211,238,0.16)]'
@@ -287,7 +326,13 @@ export function AluDesk({
             <path
               d="M 160 70 L 160 96"
               fill="none"
-              stroke={passedExecute && !isFlowPulse ? '#34d399' : '#334155'}
+              stroke={
+                passedExecute && !isFlowPulse
+                  ? isRealMemOp
+                    ? '#a78bfa'
+                    : '#34d399'
+                  : '#334155'
+              }
               strokeWidth={passedExecute && !isFlowPulse ? 2.5 : 1.5}
               strokeDasharray={passedExecute && !isFlowPulse ? undefined : '4 3'}
               className={(inExecute || inMemory) && !isFlowPulse ? 'rz-wire-flow' : undefined}
@@ -297,9 +342,9 @@ export function AluDesk({
             {inExecute && pulse?.leftSource && (
               <g>
                 <rect
-                  x="-18"
+                  x={-leftPillW / 2}
                   y="-9"
-                  width="36"
+                  width={leftPillW}
                   height="18"
                   rx="9"
                   fill="#06b6d4"
@@ -311,11 +356,11 @@ export function AluDesk({
                   y="3.5"
                   textAnchor="middle"
                   fill="#020617"
-                  fontSize="10.5"
+                  fontSize="10"
                   fontWeight="800"
                   fontFamily="ui-monospace, monospace"
                 >
-                  {pulse.leftSource.value}
+                  {leftPillText}
                 </text>
                 <animateMotion begin="0s" dur={inDur} fill="freeze" path="M 76 0 L 76 12 L 138 42" />
                 <animate
@@ -331,9 +376,9 @@ export function AluDesk({
             {inExecute && pulse?.rightSource && (
               <g>
                 <rect
-                  x="-18"
+                  x={-rightPillW / 2}
                   y="-9"
-                  width="36"
+                  width={rightPillW}
                   height="18"
                   rx="9"
                   fill={rightView.isConst ? '#f59e0b' : '#06b6d4'}
@@ -345,11 +390,11 @@ export function AluDesk({
                   y="3.5"
                   textAnchor="middle"
                   fill="#020617"
-                  fontSize="10.5"
+                  fontSize="10"
                   fontWeight="800"
                   fontFamily="ui-monospace, monospace"
                 >
-                  {pulse.rightSource.value}
+                  {rightPillText}
                 </text>
                 <animateMotion begin="0s" dur={inDur} fill="freeze" path="M 244 0 L 244 12 L 182 42" />
                 <animate
@@ -363,13 +408,47 @@ export function AluDesk({
               </g>
             )}
 
-            {/* 执行后半段：绿色运算结果胶囊从芯片底部无缝涌出并直落存入槽 */}
-            {inExecute && isAluOrMemPulse && pulse?.newDestVal !== undefined && (
+            {/* 执行后半段：访存指令送出紫色「计算地址」胶囊（与当前进制保持一致），普通运算送出绿色「运算结果」胶囊 */}
+            {inExecute && isRealMemOp && memAddrText && (
               <g opacity="0">
                 <rect
-                  x="-20"
+                  x={-memAddrPillW / 2}
                   y="-9.5"
-                  width="40"
+                  width={memAddrPillW}
+                  height="19"
+                  rx="9.5"
+                  fill="#8b5cf6"
+                  stroke="#ede9fe"
+                  strokeWidth="1.2"
+                />
+                <text
+                  x="0"
+                  y="3.5"
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  fontSize="10"
+                  fontWeight="800"
+                  fontFamily="ui-monospace, monospace"
+                >
+                  {memAddrText}
+                </text>
+                <animateMotion begin={inDur} dur={outDur} fill="freeze" path="M 160 54 L 160 96" />
+                <animate
+                  attributeName="opacity"
+                  begin={inDur}
+                  dur={outDur}
+                  values="0;1;1;1"
+                  keyTimes="0;0.14;0.88;1"
+                  fill="freeze"
+                />
+              </g>
+            )}
+            {inExecute && !isRealMemOp && isAluOrMemPulse && pulse?.newDestVal !== undefined && (
+              <g opacity="0">
+                <rect
+                  x={-aluOutPillW / 2}
+                  y="-9.5"
+                  width={aluOutPillW}
                   height="19"
                   rx="9.5"
                   fill="#10b981"
@@ -381,19 +460,19 @@ export function AluDesk({
                   y="3.5"
                   textAnchor="middle"
                   fill="#022c22"
-                  fontSize="10.5"
+                  fontSize="10"
                   fontWeight="800"
                   fontFamily="ui-monospace, monospace"
                 >
-                  {pulse.newDestVal}
+                  {aluOutText}
                 </text>
-                <animateMotion begin={inDur} dur={outDur} fill="freeze" path="M 160 54 L 160 95" />
+                <animateMotion begin={inDur} dur={outDur} fill="freeze" path="M 160 54 L 160 96" />
                 <animate
                   attributeName="opacity"
                   begin={inDur}
                   dur={outDur}
-                  values="0;1;1;0"
-                  keyTimes="0;0.14;0.84;1"
+                  values="0;1;1;1"
+                  keyTimes="0;0.14;0.88;1"
                   fill="freeze"
                 />
               </g>
@@ -473,35 +552,240 @@ export function AluDesk({
         </div>
       </div>
 
-      {/* 4. 访存阶段（仅解锁内存或真实执行 lw/sw 时出现；前期彻底隐藏，避免引入未学概念） */}
-      {showMemoryStage && (
+      {/* 无断层垂直导线连接（ALU 底部 → 访存/存入顶部） */}
+      <div className="mx-auto flex h-2.5 w-full max-w-[320px] justify-center" aria-hidden="true">
         <div
-          className={`flex items-center justify-between rounded-xl border px-3 py-1.5 text-[11px] transition ${
-            inMemory && isRealMemOp
-              ? 'border-violet-400 bg-violet-950/40 text-violet-200 shadow-[0_0_14px_rgba(167,139,250,0.28)]'
-              : inMemory
-                ? 'border-emerald-500/50 bg-emerald-950/20 text-emerald-300'
-                : 'border-slate-700 bg-slate-950/80 text-slate-300'
+          className={`h-full w-0.5 transition ${
+            passedExecute && !isFlowPulse
+              ? isRealMemOp
+                ? 'bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.6)]'
+                : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+              : 'bg-slate-800'
           }`}
-        >
-          <span className="inline-flex items-center gap-1.5 font-semibold">
-            <HardDrive className="h-3.5 w-3.5 opacity-75" />
-            访存
-          </span>
-          {isRealMemOp && ord >= 4 ? (
-            <span className="font-mono text-violet-200">
-              {pulse?.kind === 'load'
-                ? `读 ${memAddrHex} → ${pulse.memVal ?? 0}`
-                : `写 ${memAddrHex} ← ${pulse?.memVal ?? 0}`}
-            </span>
-          ) : (
-            <span className="font-mono text-[10px]">本指令不访存 · 直通</span>
-          )}
-        </div>
+        />
+      </div>
+
+      {/* 4. 访存阶段（仅解锁内存或真实执行 lw/sw 时出现；数据未流抵前保持待命，抵达后展示真实地址读写转换或绿色旁路直通） */}
+      {showMemoryStage && (
+        <>
+          <div
+            ref={memStageRef}
+            className={`relative overflow-visible rounded-xl border px-3 py-1.5 text-[11px] transition ${
+              inMemory && isRealMemOp
+                ? 'border-violet-400 bg-violet-950/45 text-violet-100 shadow-[0_0_16px_rgba(167,139,250,0.3)]'
+                : inMemory && !isRealMemOp
+                  ? 'border-emerald-400/75 bg-emerald-950/25 text-emerald-200 shadow-[0_0_14px_rgba(52,211,153,0.2)]'
+                  : 'border-slate-800 bg-slate-950/85 text-slate-400'
+            }`}
+          >
+            <div className="flex h-6 items-center justify-between gap-2">
+              <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold">
+                <HardDrive className="h-3.5 w-3.5 opacity-80" />
+                访存
+              </span>
+
+              {ord >= 4 && isRealMemOp ? (
+                <span className="font-mono font-bold text-violet-200">
+                  {pulse?.kind === 'load'
+                    ? `读 ${memAddrText} → ${memValText}`
+                    : `写 ${memAddrText} ← ${memValText}`}
+                </span>
+              ) : ord >= 4 && !isFlowPulse && pulse ? (
+                <span className="font-mono text-[10px] font-semibold text-emerald-300">
+                  本指令不访存 · 直通
+                </span>
+              ) : (
+                <span className="font-mono text-[10px] text-slate-600">待命</span>
+              )}
+            </div>
+
+            {/* 贯穿访存盒中央的连续数据流动画轨道：杜绝执行 → 访存 → 写回之间的数据胶囊消失断层 */}
+            <svg
+              key={inMemory ? `mem-${pulseKey}` : 'mem-idle'}
+              viewBox="0 0 320 40"
+              className="pointer-events-none absolute inset-x-0 -top-1 mx-auto h-[44px] w-full max-w-[320px] overflow-visible"
+              aria-hidden="true"
+            >
+              {/* load：前半段紫色地址胶囊抵达访存中心，后半段转换为绿色读出值胶囊滑出送往存入槽 */}
+              {inMemory && pulse?.kind === 'load' && memAddrText && (
+                <>
+                  <g>
+                    <rect
+                      x={-memAddrPillW / 2}
+                      y="-9"
+                      width={memAddrPillW}
+                      height="18"
+                      rx="9"
+                      fill="#8b5cf6"
+                      stroke="#ede9fe"
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x="0"
+                      y="3.5"
+                      textAnchor="middle"
+                      fill="#ffffff"
+                      fontSize="9.5"
+                      fontWeight="800"
+                      fontFamily="ui-monospace, monospace"
+                    >
+                      {memAddrText}
+                    </text>
+                    <animateMotion begin="0s" dur={memInDur} fill="freeze" path="M 160 0 L 160 20" />
+                    <animate
+                      attributeName="opacity"
+                      begin="0s"
+                      dur={memInDur}
+                      values="1;1;0"
+                      keyTimes="0;0.82;1"
+                      fill="freeze"
+                    />
+                  </g>
+                  <g opacity="0">
+                    <rect
+                      x={-memValPillW / 2}
+                      y="-9"
+                      width={memValPillW}
+                      height="18"
+                      rx="9"
+                      fill="#10b981"
+                      stroke="#d1fae5"
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x="0"
+                      y="3.5"
+                      textAnchor="middle"
+                      fill="#022c22"
+                      fontSize="10"
+                      fontWeight="800"
+                      fontFamily="ui-monospace, monospace"
+                    >
+                      {memValText}
+                    </text>
+                    <animateMotion
+                      begin={memInDur}
+                      dur={memOutDur}
+                      fill="freeze"
+                      path="M 160 20 L 160 42"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      begin={memInDur}
+                      dur={memOutDur}
+                      values="0;1;1;1"
+                      keyTimes="0;0.15;0.88;1"
+                      fill="freeze"
+                    />
+                  </g>
+                </>
+              )}
+
+              {/* store：上方进入 ALU 算出的地址，右侧同步滑入从端口 B 分流过来的待写入数值，两者在访存中心汇合落盘 */}
+              {inMemory && pulse?.kind === 'store' && memAddrText && (
+                <>
+                  <g>
+                    <rect
+                      x={-memAddrPillW / 2}
+                      y="-9"
+                      width={memAddrPillW}
+                      height="18"
+                      rx="9"
+                      fill="#8b5cf6"
+                      stroke="#ede9fe"
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x="0"
+                      y="3.5"
+                      textAnchor="middle"
+                      fill="#ffffff"
+                      fontSize="9.5"
+                      fontWeight="800"
+                      fontFamily="ui-monospace, monospace"
+                    >
+                      {memAddrText}
+                    </text>
+                    <animateMotion begin="0s" dur={memInDur} fill="freeze" path="M 160 0 L 136 20" />
+                  </g>
+                  <g>
+                    <rect
+                      x={-memValPillW / 2}
+                      y="-9"
+                      width={memValPillW}
+                      height="18"
+                      rx="9"
+                      fill="#a78bfa"
+                      stroke="#f5f3ff"
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x="0"
+                      y="3.5"
+                      textAnchor="middle"
+                      fill="#1e1b4b"
+                      fontSize="10"
+                      fontWeight="800"
+                      fontFamily="ui-monospace, monospace"
+                    >
+                      {memValText}
+                    </text>
+                    <animateMotion begin="0s" dur={memInDur} fill="freeze" path="M 356 20 L 204 20" />
+                  </g>
+                </>
+              )}
+
+              {/* 非访存运算旁路直通：绿色结果胶囊无停顿从顶滑到底，直入存入槽 */}
+              {inMemory && !isRealMemOp && !isFlowPulse && pulse?.newDestVal !== undefined && (
+                <g>
+                  <rect
+                    x={-aluOutPillW / 2}
+                    y="-9"
+                    width={aluOutPillW}
+                    height="18"
+                    rx="9"
+                    fill="#10b981"
+                    stroke="#d1fae5"
+                    strokeWidth="1.2"
+                  />
+                  <text
+                    x="0"
+                    y="3.5"
+                    textAnchor="middle"
+                    fill="#022c22"
+                    fontSize="10"
+                    fontWeight="800"
+                    fontFamily="ui-monospace, monospace"
+                  >
+                    {aluOutText}
+                  </text>
+                  <animateMotion
+                    begin="0s"
+                    dur={memBypassDur}
+                    fill="freeze"
+                    path="M 160 0 L 160 42"
+                  />
+                </g>
+              )}
+            </svg>
+          </div>
+
+          {/* 访存底部 → 存入顶部连续垂直导线 */}
+          <div className="mx-auto flex h-2.5 w-full max-w-[320px] justify-center" aria-hidden="true">
+            <div
+              className={`h-full w-0.5 transition ${
+                (inMemory || inWriteback) && !isFlowPulse && pulse?.kind !== 'store'
+                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+                  : 'bg-slate-800'
+              }`}
+            />
+          </div>
+        </>
       )}
 
-      {/* 5. 写回 / 存入区：存入槽 + 手动触发按钮（右侧接通绿色回流总线绕回寄存器） */}
+      {/* 5. 写回 / 存入区：存入槽 + 手动触发按钮（左侧接通绿色回流总线绕回寄存器） */}
       <div
+        ref={wbBoxRef}
         className={`rounded-2xl border bg-slate-950/90 px-3 py-2 transition ${
           inWriteback
             ? 'border-emerald-400 bg-emerald-950/25 shadow-[0_0_18px_rgba(52,211,153,0.22)]'
@@ -553,7 +837,7 @@ export function AluDesk({
             >
               {displayDest
                 ? displayDestVal !== undefined
-                  ? `${displayDest} ← ${displayDestVal}`
+                  ? `${displayDest} ← ${formatDatapathValue(displayDestVal, radix)}`
                   : displayDest
                 : playbackMode
                   ? '—'

@@ -1,0 +1,105 @@
+{
+  "level": "1-15",
+  "language": "asm",
+  "availableOps": [
+    "jal",
+    "ret",
+    "jalr",
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mul",
+    "mv",
+    "blt",
+    "bge",
+    "beq",
+    "bne",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 1000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "3² + 4² = 25（先跑此测例观察死循环 Bug！）",
+        "initial": {
+          "regs": {
+            "t0": 3,
+            "t1": 4
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 25
+          }
+        }
+      },
+      {
+        "name": "含负数：(-5)² + 12² = 169",
+        "initial": {
+          "regs": {
+            "t0": -5,
+            "t1": 12
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 169
+          }
+        }
+      },
+      {
+        "name": "零边界：0² + 7² = 49",
+        "initial": {
+          "regs": {
+            "t0": 0,
+            "t1": 7
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 49
+          }
+        }
+      },
+      {
+        "name": "10² + (-10)² = 200",
+        "initial": {
+          "regs": {
+            "t0": 10,
+            "t1": -10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 200
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11501,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -100,
+          "max": 100
+        },
+        "t1": {
+          "min": -100,
+          "max": 100
+        }
+      }
+    }
+  }
+}

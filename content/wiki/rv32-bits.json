@@ -1,0 +1,64 @@
+{
+  "topic": "rv32-bits",
+  "title": "二进制、补码与按位运算",
+  "order": 5,
+  "unlockAny": ["binary", "twos-complement", "bitwise"],
+  "summary": "每个寄存器都是 32 个 0/1 开关。掌握二进制、补码与按位运算，就能直接操控硬件最底层的比特流。",
+  "sections": [
+    {
+      "id": "bit-ops",
+      "heading": "已解锁的移位与按位指令",
+      "unlockAny": ["slli", "srli", "srai", "and", "or", "xor", "li"],
+      "kind": "table",
+      "columns": [
+        { "id": "op", "label": "指令", "unlockAny": [] },
+        { "id": "syntax", "label": "写法", "unlockAny": [] },
+        { "id": "meaning", "label": "效果", "unlockAny": [] }
+      ],
+      "rows": [
+        {
+          "id": "slli",
+          "unlockAny": ["slli"],
+          "cells": { "op": "`slli`", "syntax": "`slli rd, rs1, k`", "meaning": "逻辑左移 `k` 位，右边补 `0`（等价于 `× 2ᵏ`）" }
+        },
+        {
+          "id": "srli",
+          "unlockAny": ["srli"],
+          "cells": { "op": "`srli`", "syntax": "`srli rd, rs1, k`", "meaning": "逻辑右移 `k` 位，左边补 `0`（无符号 `÷ 2ᵏ`）" }
+        },
+        {
+          "id": "srai",
+          "unlockAny": ["srai"],
+          "cells": { "op": "`srai`", "syntax": "`srai rd, rs1, k`", "meaning": "算术右移 `k` 位，左边复制符号位（有符号保留正负）" }
+        },
+        {
+          "id": "and",
+          "unlockAny": ["and"],
+          "cells": { "op": "`and` / `andi`", "syntax": "`and rd, rs1, rs2`", "meaning": "按位与：同为 `1` 得 `1`（常用于位掩码提取）" }
+        },
+        {
+          "id": "or",
+          "unlockAny": ["or"],
+          "cells": { "op": "`or` / `ori`", "syntax": "`or rd, rs1, rs2`", "meaning": "按位或：有 `1` 得 `1`（常用于位字段拼接）" }
+        },
+        {
+          "id": "xor",
+          "unlockAny": ["xor"],
+          "cells": { "op": "`xor` / `xori`", "syntax": "`xor rd, rs1, rs2`", "meaning": "按位异或：不同得 `1`（`a ^ a = 0`，成对抵消或翻转位）" }
+        },
+        {
+          "id": "li",
+          "unlockAny": ["li", "lui"],
+          "cells": { "op": "`li` (`lui`+`addi`)", "syntax": "`li rd, 常数`", "meaning": "装载任意 32 位大常数（自动拆成高位 `lui` + 低位 `addi`）" }
+        }
+      ]
+    },
+    {
+      "id": "twos-comp",
+      "heading": "补码与有符号 / 无符号",
+      "unlockAny": ["twos-complement", "signed-unsigned"],
+      "kind": "markdown",
+      "markdown": "硬件寄存器只保存 32 位 `0/1`，不额外存储正负号标签：\n\n- **有符号（补码）**：最高位为 `1` 表示负数，`-1 = 0xFFFFFFFF`，满足 `(-1) + 1 = 0` 自动回绕；\n- **无符号（U32）**：全部 32 位都表示非负大小（`0 ~ 4,294,967,295`）；\n- 只有**右移**（`srai` vs `srli`）与**大小比较**（`blt`/`bge` vs `bltu`/`bgeu`）需要区分有符号与无符号。"
+    }
+  ]
+}

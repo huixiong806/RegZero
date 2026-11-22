@@ -1,0 +1,147 @@
+{
+  "level": "1-10",
+  "language": "asm",
+  "availableOps": [
+    "lbu",
+    "sb",
+    "lw",
+    "sw",
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "beq",
+    "bne",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 5000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "\"hello\" → \"HELLO\"（长度 5）",
+        "initial": {
+          "regs": {
+            "t0": 4096
+          },
+          "memory": {
+            "0x1000": {
+              "string": "hello"
+            }
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 5
+          },
+          "memory": {
+            "0x1000": {
+              "string": "HELLO"
+            }
+          }
+        }
+      },
+      {
+        "name": "\"regzero\" → \"REGZERO\"（长度 7）",
+        "initial": {
+          "regs": {
+            "t0": 4096
+          },
+          "memory": {
+            "0x1000": {
+              "string": "regzero"
+            }
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 7
+          },
+          "memory": {
+            "0x1000": {
+              "string": "REGZERO"
+            }
+          }
+        }
+      },
+      {
+        "name": "单字母 \"a\" → \"A\"（长度 1）",
+        "initial": {
+          "regs": {
+            "t0": 4096
+          },
+          "memory": {
+            "0x1000": {
+              "string": "a"
+            }
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 1
+          },
+          "memory": {
+            "0x1000": {
+              "string": "A"
+            }
+          }
+        }
+      },
+      {
+        "name": "空串 \"\" → 长度 0",
+        "initial": {
+          "regs": {
+            "t0": 4096,
+            "t1": 99
+          },
+          "memory": {
+            "0x1000": {
+              "string": ""
+            }
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0
+          },
+          "memory": {
+            "0x1000": {
+              "string": ""
+            }
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11001,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1"
+    ],
+    "checkMemory": [
+      {
+        "addr": "0x1000",
+        "kind": "string"
+      }
+    ],
+    "inputs": {
+      "strings": [
+        {
+          "addr": "0x1000",
+          "addrReg": "t0",
+          "len": [
+            0,
+            12
+          ],
+          "charset": "lower"
+        }
+      ]
+    }
+  }
+}

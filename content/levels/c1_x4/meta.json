@@ -1,0 +1,113 @@
+{
+  "id": "1-X4",
+  "chapter": 1,
+  "order": 19.4,
+  "kind": "challenge",
+  "title": "栈顶算盘",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-18"
+  ],
+  "parSteps": 1800,
+  "concepts": [
+    "rpn-eval",
+    "stack-machine"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "pcAddress": true,
+    "allRegsToggle": true,
+    "ecallSuffix": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "输入流是一条以空格分隔的逆波兰表达式（含非负整数与 + - *，如 \"12 3 4 + * 5 -\"）",
+    "after": "借助栈指针 sp 计算表达式最终结果，用 ecall (a7=2) 输出整数并正常退出"
+  },
+  "briefing": [
+    {
+      "tag": "终局委托 · 舰载算盘",
+      "text": "星舰终端急需一台离线表达式计算器，能够读入空格分隔的逆波兰式（如 `12 3 4 + * 5 -`）并借助硬件栈实时算出结果。"
+    },
+    {
+      "tag": "挑战目标",
+      "text": "从输入流读取逆波兰表达式（含非负整数与 `+ - *`），用 `sp` 栈求值后通过 `ecall (a7=2)` 打印结果并退出。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "sp",
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "a0",
+      "a7"
+    ],
+    "regRoles": {
+      "sp": "栈指针",
+      "a0": "参数/值",
+      "a7": "调用号"
+    },
+    "aluOps": [
+      "+",
+      "-",
+      "*"
+    ],
+    "warmupPuzzle": {
+      "prompt": "解析并求值输入中的逆波兰表达式（支持多位数与 + - *），通过 ecall 输出整数结果！",
+      "initial": {
+        "regs": {
+          "sp": 61440,
+          "t0": 0,
+          "t1": 0,
+          "t2": 0,
+          "t3": 0,
+          "a0": 0,
+          "a7": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "a7": 0
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 0
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "从 0xF0000004 读字符：跳过空格(32)与换行(10)；若为 0 结束；若为数字 '0'–'9' 连续读完整个整数压入 sp 栈；若为 '+'(43)/'-'(45)/'*'(42) 则弹出右值 0(sp) 和左值 4(sp)，算完写回新栈顶。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "小优化：遇到运算符要「弹 2 个再压 1 个」，相当于只把 sp += 4，然后把结果直接覆写进新的 0(sp)，能省掉两条指令！"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "li   t0, 0xF0000004\naddi t5, zero, 10\naddi t6, zero, 32\nloop:\nlbu  t1, 0(t0)\nbeq  t1, zero, done\nbeq  t1, t6, loop\nbeq  t1, t5, loop\naddi t4, t1, -48\nbltu t4, t5, parse_num\nlw   t3, 0(sp)\nlw   t2, 4(sp)\naddi sp, sp, 4\naddi t4, zero, 43\nbeq  t1, t4, do_add\naddi t4, zero, 45\nbeq  t1, t4, do_sub\nmul  t2, t2, t3\nj    store_res\ndo_add:\nadd  t2, t2, t3\nj    store_res\ndo_sub:\nsub  t2, t2, t3\nstore_res:\nsw   t2, 0(sp)\nj    loop\nparse_num:\nmv   t2, t4\nnum_loop:\nlbu  t1, 0(t0)\naddi t4, t1, -48\nbgeu t4, t5, push_num\nmul  t2, t2, t5\nadd  t2, t2, t4\nj    num_loop\npush_num:\naddi sp, sp, -4\nsw   t2, 0(sp)\nbne  t1, zero, loop\ndone:\nlw   a0, 0(sp)\naddi a7, zero, 2\necall\naddi a0, zero, 0\naddi a7, zero, 0\necall"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-func",
+    "rv32-memory"
+  ]
+}

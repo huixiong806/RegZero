@@ -1,0 +1,104 @@
+{
+  "id": "1-9S",
+  "chapter": 1,
+  "order": 9.5,
+  "kind": "challenge",
+  "title": "首尾对折",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-9"
+  ],
+  "parSteps": 270,
+  "concepts": [
+    "two-cursor",
+    "in-place-reverse"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "memoryStage": true,
+    "hexToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 是起始内存地址，t1 是整数个数 n",
+    "after": "原地将这 n 个整数首尾翻转（例如 [1,2,3,4] → [4,3,2,1]）"
+  },
+  "briefing": [
+    {
+      "tag": "故障支线 · 磁带倒放",
+      "text": "黑匣子磁带机构卡反了，导进内存的 `n` 条关键记录完全逆序！必须就地翻正，且动作要足够利落。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "把从 `t0` 开始的 `n`（`t1`）个整数**原地首尾翻转**（如 `[1,2,3,4]` → `[4,3,2,1]`）。按动态总步数评定性能金牌。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3",
+      "t4"
+    ],
+    "regRoles": {
+      "t0": "首地址",
+      "t1": "个数 n"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "将从 t0 开始的连续 t1 个整数原地前后倒序排列，并尽量压低总执行步数。",
+      "initial": {
+        "regs": {
+          "t0": 4096,
+          "t1": 5,
+          "t2": 4112,
+          "t3": 0,
+          "t4": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t0": 4104
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "第 0 个元素在 t0，最后一个元素在 t0 + (n - 1) * 4。每轮交换 0(左) 与 0(右)，然后左 +4、右 -4，直到 左 >= 右。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. 先算尾地址：t2 = (t1 - 1) * 4 + t0；2. loop: bge t0, t2, done；3. lw t3, 0(t0)；lw t4, 0(t2)；4. sw t4, 0(t0)；sw t3, 0(t2)；5. addi t0, t0, 4；addi t2, t2, -4；6. j loop；7. done:。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t2, t1, -1\naddi t3, zero, 4\nmul  t2, t2, t3\nadd  t2, t0, t2\nloop:\nbge  t0, t2, done\nlw   t3, 0(t0)\nlw   t4, 0(t2)\nsw   t4, 0(t0)\nsw   t3, 0(t2)\naddi t0, t0, 4\naddi t2, t2, -4\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-memory",
+    "rv32-branch"
+  ]
+}

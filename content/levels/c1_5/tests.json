@@ -1,7 +1,12 @@
 {
   "level": "1-5",
   "language": "asm",
-  "availableOps": ["mul", "div", "rem", "ecall"],
+  "availableOps": [
+    "mul",
+    "div",
+    "rem",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 1000,
   "goal": {
@@ -9,24 +14,91 @@
     "tests": [
       {
         "name": "17 按 5 装箱：3 箱余 2，已装 15",
-        "initial": { "regs": { "t0": 17, "t1": 5 } },
-        "expected": { "regs": { "t2": 3, "t3": 2, "t4": 15 } }
+        "initial": {
+          "regs": {
+            "t0": 17,
+            "t1": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 3,
+            "t3": 2,
+            "t4": 15
+          }
+        }
       },
       {
         "name": "100 按 7 装箱：14 箱余 2，已装 98",
-        "initial": { "regs": { "t0": 100, "t1": 7 } },
-        "expected": { "regs": { "t2": 14, "t3": 2, "t4": 98 } }
+        "initial": {
+          "regs": {
+            "t0": 100,
+            "t1": 7
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 14,
+            "t3": 2,
+            "t4": 98
+          }
+        }
       },
       {
         "name": "3 按 10 装箱（不够一箱）",
-        "initial": { "regs": { "t0": 3, "t1": 10 } },
-        "expected": { "regs": { "t2": 0, "t3": 3, "t4": 0 } }
+        "initial": {
+          "regs": {
+            "t0": 3,
+            "t1": 10
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": 0,
+            "t3": 3,
+            "t4": 0
+          }
+        }
       },
       {
         "name": "-17 按 5（向零截断，余数随被除数符号）",
-        "initial": { "regs": { "t0": -17, "t1": 5 } },
-        "expected": { "regs": { "t2": -3, "t3": -2, "t4": -15 } }
+        "initial": {
+          "regs": {
+            "t0": -17,
+            "t1": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t2": -3,
+            "t3": -2,
+            "t4": -15
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10501,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t2",
+      "t3",
+      "t4"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 0,
+          "max": 500
+        },
+        "t1": {
+          "min": 1,
+          "max": 50,
+          "nonZero": true
+        }
+      }
+    }
   }
 }

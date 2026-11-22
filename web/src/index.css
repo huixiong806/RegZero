@@ -220,12 +220,12 @@
 @keyframes rz-wb-rise {
   0% {
     opacity: 0;
-    top: 90%;
+    top: var(--rz-wb-bottom, 90%);
     transform: translate(-50%, -50%) scale(0.8);
   }
   14% {
     opacity: 1;
-    top: 88%;
+    top: var(--rz-wb-bottom, 88%);
     transform: translate(-50%, -50%) scale(1);
   }
   86% {
@@ -240,27 +240,79 @@
   }
 }
 
-/* 跳转/循环目标行号胶囊沿右侧回流轨爬升，直抵顶部当前指令 PC 槽 */
+/* 跳转/循环目标行号胶囊沿右侧外轨爬升，直抵顶部当前指令 PC 槽 */
 @keyframes rz-jump-rise {
   0% {
     opacity: 0;
-    top: 64%;
+    top: var(--rz-jump-from, 64%);
     transform: translate(-50%, -50%) scale(0.8);
   }
   14% {
     opacity: 1;
-    top: 62%;
+    top: var(--rz-jump-from, 62%);
     transform: translate(-50%, -50%) scale(1);
   }
   86% {
     opacity: 1;
-    top: 6%;
+    top: var(--rz-jump-to, 6%);
     transform: translate(-50%, -50%) scale(1);
   }
   100% {
     opacity: 0;
-    top: 5%;
+    top: var(--rz-jump-to, 5%);
     transform: translate(-50%, -50%) scale(0.84);
+  }
+}
+
+/* 存内存指令（sw/sb）待写入数据从寄存器端口 B 沿 44px 总线横移出右缘（译码阶段） */
+@keyframes rz-store-tap-out {
+  0% {
+    opacity: 0;
+    left: 57.5%;
+    top: 0%;
+    transform: translate(-50%, -50%) scale(0.84);
+  }
+  16% {
+    opacity: 1;
+    left: 57.5%;
+    top: 28%;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  88% {
+    opacity: 1;
+    left: 100%;
+    top: 28%;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    left: 102%;
+    top: 28%;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
+/* 存内存指令（sw/sb）待写入数据接力沿右侧专用直通轨下降，直达访存单元右入口（执行阶段） */
+@keyframes rz-store-drop {
+  0% {
+    opacity: 1;
+    top: var(--rz-store-top, 36%);
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  12% {
+    opacity: 1;
+    top: var(--rz-store-top, 36%);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  88% {
+    opacity: 1;
+    top: var(--rz-store-bottom, 79%);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    top: var(--rz-store-bottom, 79%);
+    transform: translate(-50%, -50%) scale(0.9);
   }
 }
 
@@ -319,6 +371,14 @@
 
 .rz-jump-rise {
   animation: rz-jump-rise 0.52s cubic-bezier(0.35, 0, 0.25, 1) forwards;
+}
+
+.rz-store-tap-out {
+  animation: rz-store-tap-out 0.8s cubic-bezier(0.32, 0, 0.22, 1) forwards;
+}
+
+.rz-store-drop {
+  animation: rz-store-drop 1.4s cubic-bezier(0.35, 0, 0.25, 1) forwards;
 }
 
 /* CodeMirror 6 暗色主题微调 */

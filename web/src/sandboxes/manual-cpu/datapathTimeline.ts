@@ -39,10 +39,11 @@ export const ALL_DATAPATH_STAGES: readonly { id: ActiveDatapathStage; label: str
   { id: 'writeback', label: '写回' },
 ];
 
-/** 根据指令类型生成精确的执行阶段序列（非访存指令不经过访存阶段）。 */
+/** 根据指令类型生成精确的执行阶段序列（当关卡显示访存模块时，非访存运算指令走短旁路直通，确保视觉数据流无断层）。 */
 export function buildStageSequence(
   pulse: CpuPulseEvent,
   includeFetch: boolean,
+  includeMemoryBypass = false,
 ): StageFrame[] {
   const frames: StageFrame[] = [];
   if (includeFetch) {
@@ -54,6 +55,13 @@ export function buildStageSequence(
     case 'copy':
       frames.push({ stage: 'decode', bypass: false, baseMs: STAGE_BASE_MS.decode });
       frames.push({ stage: 'execute', bypass: false, baseMs: STAGE_BASE_MS.execute });
+      if (includeMemoryBypass && pulse.destReg) {
+        frames.push({
+          stage: 'memory',
+          bypass: true,
+          baseMs: Math.round(STAGE_BASE_MS.memory * 0.45),
+        });
+      }
       if (pulse.destReg) {
         frames.push({ stage: 'writeback', bypass: false, baseMs: STAGE_BASE_MS.writeback });
       }
@@ -72,13 +80,14 @@ export function buildStageSequence(
       break;
     case 'load':
       frames.push({ stage: 'decode', bypass: false, baseMs: STAGE_BASE_MS.decode });
-      frames.push({ stage: 'execute', bypass: false, baseMs: Math.round(STAGE_BASE_MS.execute * 0.8) });
+      // 与 execute 单一真源保持同长，确保 ALU 地址计算胶囊完整滑抵访存模块顶口
+      frames.push({ stage: 'execute', bypass: false, baseMs: STAGE_BASE_MS.execute });
       frames.push({ stage: 'memory', bypass: false, baseMs: STAGE_BASE_MS.memory });
       frames.push({ stage: 'writeback', bypass: false, baseMs: STAGE_BASE_MS.writeback });
       break;
     case 'store':
       frames.push({ stage: 'decode', bypass: false, baseMs: STAGE_BASE_MS.decode });
-      frames.push({ stage: 'execute', bypass: false, baseMs: Math.round(STAGE_BASE_MS.execute * 0.8) });
+      frames.push({ stage: 'execute', bypass: false, baseMs: STAGE_BASE_MS.execute });
       frames.push({ stage: 'memory', bypass: false, baseMs: STAGE_BASE_MS.memory });
       break;
     default:
@@ -120,8 +129,9 @@ export function getPcUpdateDelayMs(
   pulse: CpuPulseEvent,
   includeFetch: boolean,
   speed: PlaybackSpeed,
+  includeMemoryBypass = false,
 ): number {
-  const frames = buildStageSequence(pulse, includeFetch);
+  const frames = buildStageSequence(pulse, includeFetch, includeMemoryBypass);
   const isTakenFlow =
     (pulse.kind === 'branch' || pulse.kind === 'jump') && Boolean(pulse.branchTaken);
   if (!isTakenFlow) {

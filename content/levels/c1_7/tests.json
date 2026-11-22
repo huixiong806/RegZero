@@ -1,7 +1,16 @@
 {
   "level": "1-7",
   "language": "asm",
-  "availableOps": ["add", "addi", "sub", "mv", "blt", "bge", "j", "ecall"],
+  "availableOps": [
+    "add",
+    "addi",
+    "sub",
+    "mv",
+    "blt",
+    "bge",
+    "j",
+    "ecall"
+  ],
   "forbiddenRegs": [],
   "maxInstructions": 5000,
   "goal": {
@@ -9,24 +18,72 @@
     "tests": [
       {
         "name": "n = 5：1+2+3+4+5 = 15",
-        "initial": { "regs": { "t0": 5 } },
-        "expected": { "regs": { "t1": 15 } }
+        "initial": {
+          "regs": {
+            "t0": 5
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 15
+          }
+        }
       },
       {
         "name": "n = 1：单步循环结果为 1",
-        "initial": { "regs": { "t0": 1 } },
-        "expected": { "regs": { "t1": 1 } }
+        "initial": {
+          "regs": {
+            "t0": 1
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 1
+          }
+        }
       },
       {
         "name": "n = 0：空循环边界为 0",
-        "initial": { "regs": { "t0": 0 } },
-        "expected": { "regs": { "t1": 0 } }
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0
+          }
+        }
       },
       {
         "name": "n = 100：高斯求和 = 5050",
-        "initial": { "regs": { "t0": 100 } },
-        "expected": { "regs": { "t1": 5050 } }
+        "initial": {
+          "regs": {
+            "t0": 100
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 5050
+          }
+        }
       }
     ]
+  },
+  "generated": {
+    "seed": 10701,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": 0,
+          "max": 40
+        }
+      }
+    }
   }
 }

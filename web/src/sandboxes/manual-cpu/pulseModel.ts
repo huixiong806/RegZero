@@ -23,6 +23,8 @@ export interface CpuPulseEvent {
   symbol?: string;
   leftSource?: PulseSource;
   rightSource?: PulseSource;
+  /** 存内存指令（sw/sb）绕过 ALU 直接送往访存单元的写入源寄存器与数值 */
+  storeDataSource?: { name: string; value: number };
   destReg?: string;
   oldDestVal?: number;
   newDestVal?: number;
@@ -43,6 +45,8 @@ export interface LiveCpuPlayback {
   /** 本测例期望的最终寄存器值（可选，用于在舞台上点亮达标反馈）。 */
   goalRegs?: Record<string, number>;
   pulse: CpuPulseEvent | null;
+  /** 当前真实字节地址 PC（用于 `pcAddress` 开启后展示 `0x0000`、`0x0004` 等指令地址）。 */
+  pc?: number;
   pcLine: number;
   tick: number;
   halted: boolean;
@@ -66,7 +70,10 @@ export function executedOpToPulse(dto: ExecutedOpDto, nonce: number): CpuPulseEv
       : undefined;
 
   let rightSource: PulseSource | undefined;
-  if (dto.rs2 !== undefined) {
+  if (dto.kind === 'store' && dto.imm !== undefined) {
+    // 存内存指令在执行阶段由 ALU 计算「基址 rs1 + 偏移 imm」，rs2 是送往访存单元的写入值
+    rightSource = { kind: 'const', label: String(dto.imm), value: dto.imm };
+  } else if (dto.rs2 !== undefined) {
     rightSource = { kind: 'reg', name: dto.rs2, value: dto.rs2Val ?? 0 };
   } else if (dto.imm !== undefined) {
     rightSource = { kind: 'const', label: String(dto.imm), value: dto.imm };
@@ -83,6 +90,11 @@ export function executedOpToPulse(dto: ExecutedOpDto, nonce: number): CpuPulseEv
       ? dto.kind
       : 'other';
 
+  const storeDataSource =
+    dto.kind === 'store' && dto.rs2 !== undefined
+      ? { name: dto.rs2, value: dto.rs2Val ?? dto.memVal ?? 0 }
+      : undefined;
+
   return {
     nonce,
     kind,
@@ -92,6 +104,7 @@ export function executedOpToPulse(dto: ExecutedOpDto, nonce: number): CpuPulseEv
     symbol: dto.symbol,
     leftSource,
     rightSource,
+    storeDataSource,
     destReg: dto.rd,
     oldDestVal: dto.rdOldVal,
     newDestVal: dto.rdNewVal,

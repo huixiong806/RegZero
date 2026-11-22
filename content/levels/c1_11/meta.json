@@ -1,0 +1,104 @@
+{
+  "id": "1-11",
+  "chapter": 1,
+  "order": 11,
+  "kind": "lesson",
+  "title": "比特滑轨",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-10"
+  ],
+  "concepts": [
+    "binary",
+    "slli",
+    "srli"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 是一个非负整数（本关禁用乘除法 mul / div）",
+    "after": "用移位指令算出：t1 = t0 × 8，t2 = t0 ÷ 4，t3 = t0 最高 8 位的值"
+  },
+  "briefing": [
+    {
+      "tag": "任务背景",
+      "text": "雷达总线接通，但高速通道的乘除法器还没通电——更棘手的是，雷达把「通道号（最高 8 位）」和「读数」压在了同一个 32 位数据包里！"
+    },
+    {
+      "tag": "通关目标",
+      "text": "禁用乘除法，用移位指令算出 `t1 = t0 × 8`、`t2 = t0 ÷ 4` 及 `t3 = t0` 最高 8 位的值。寄存器顶栏已开放 **`BIN`** 视图。"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "regRoles": {
+      "t0": "输入",
+      "t1": "× 8",
+      "t2": "÷ 4",
+      "t3": "高 8 位"
+    },
+    "aluOps": [
+      "+"
+    ],
+    "warmupPuzzle": {
+      "prompt": "切换寄存器顶栏的 DEC / HEX / BIN，看清移位时 32 个 0/1 开关如何整体左右滑动！",
+      "initial": {
+        "regs": {
+          "t0": 12,
+          "t1": 0,
+          "t2": 0,
+          "t3": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 96,
+          "t2": 3,
+          "t3": 0
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "左移 k 位相当于乘以 2^k：× 8 = 左移 3 位；无符号右移 k 位相当于除以 2^k 向下取整：÷ 4 = 右移 2 位；32 位数去掉低 24 位就只剩最高 8 位。"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. slli t1, t0, 3；2. srli t2, t0, 2；3. srli t3, t0, 24。"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "slli t1, t0, 3\nsrli t2, t0, 2\nsrli t3, t0, 24"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits",
+    "rv32-registers"
+  ]
+}

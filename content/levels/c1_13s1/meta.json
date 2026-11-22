@@ -1,0 +1,102 @@
+{
+  "id": "1-13S1",
+  "chapter": 1,
+  "order": 13.3,
+  "kind": "challenge",
+  "title": "极速数一",
+  "mode": "online",
+  "allowLocalFile": true,
+  "language": "asm",
+  "prerequisites": [
+    "1-13"
+  ],
+  "parSteps": 1000,
+  "concepts": [
+    "popcount",
+    "bit-trick"
+  ],
+  "ui": {
+    "immediatePort": true,
+    "jumpRail": true,
+    "hexToggle": true,
+    "binToggle": true,
+    "debugControls": true
+  },
+  "goalSummary": {
+    "before": "t0 是一个 32 位整数",
+    "after": "统计 t0 的 32 个二进制位中一共有多少个 1，存入 t1"
+  },
+  "briefing": [
+    {
+      "tag": "硬核支线 · 告警清点",
+      "text": "自检芯片送来一帧 32 位故障掩码，每亮起一个 `1` 代表一处告警，需要以最快速度数清告警总数。"
+    },
+    {
+      "tag": "通关目标",
+      "text": "统计 `t0` 的 32 个二进制位中一共有多少个 `1`，存入 `t1`。想拿性能金牌得想想更快的数法！"
+    }
+  ],
+  "sandbox": {
+    "type": "manual-cpu",
+    "modules": [
+      "regs",
+      "alu"
+    ],
+    "recordToAsm": false,
+    "focusRegs": [
+      "t0",
+      "t1",
+      "t2",
+      "zero"
+    ],
+    "regRoles": {
+      "t0": "输入",
+      "t1": "1 的个数",
+      "zero": "恒为 0"
+    },
+    "aluOps": [
+      "+",
+      "-"
+    ],
+    "warmupPuzzle": {
+      "prompt": "统计 32 位整数 t0 的二进制中有多少个 1 存入 t1，并尽量把总执行步数压进金牌线！",
+      "initial": {
+        "regs": {
+          "t0": 26,
+          "t1": 0,
+          "t2": 0,
+          "zero": 0
+        }
+      },
+      "goal": {
+        "regs": {
+          "t1": 3
+        }
+      }
+    }
+  },
+  "editor": {
+    "readonlyPrefix": 1,
+    "readonlySuffix": 1
+  },
+  "hints": [
+    {
+      "level": 1,
+      "type": "diagram",
+      "content": "Brian Kernighan 技巧：任何非零数减 1，会把最右边的 1 变成 0、更右边的 0 全变成 1；再和原数按位与，正好只抹掉最右边的 1！"
+    },
+    {
+      "level": 2,
+      "type": "steps",
+      "content": "1. addi t1, zero, 0；2. loop: beq t0, zero, done；3. addi t2, t0, -1；4. and t0, t0, t2；5. addi t1, t1, 1；6. j loop；7. done:。（高阶提示：还能用 SWAR 掩码 0x55555555/0x33333333/0x0F0F0F0F 零循环算出！）"
+    },
+    {
+      "level": 3,
+      "type": "snippet",
+      "content": "addi t1, zero, 0\nloop:\nbeq  t0, zero, done\naddi t2, t0, -1\nand  t0, t0, t2\naddi t1, t1, 1\nj    loop\ndone:"
+    }
+  ],
+  "wikiRefs": [
+    "rv32-bits"
+  ]
+}

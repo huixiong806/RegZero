@@ -1,0 +1,92 @@
+{
+  "level": "1-11S1",
+  "language": "asm",
+  "availableOps": [
+    "slli",
+    "srli",
+    "add",
+    "sub",
+    "mv",
+    "ecall"
+  ],
+  "forbiddenRegs": [],
+  "maxInstructions": 1000,
+  "goal": {
+    "type": "static",
+    "tests": [
+      {
+        "name": "t0 = 7 → 70 与 105",
+        "initial": {
+          "regs": {
+            "t0": 7
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 70,
+            "t2": 105
+          }
+        }
+      },
+      {
+        "name": "t0 = 123 → 1230 与 1845",
+        "initial": {
+          "regs": {
+            "t0": 123
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 1230,
+            "t2": 1845
+          }
+        }
+      },
+      {
+        "name": "负数同样成立：t0 = -9 → -90 与 -135",
+        "initial": {
+          "regs": {
+            "t0": -9
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": -90,
+            "t2": -135
+          }
+        }
+      },
+      {
+        "name": "t0 = 0 边界",
+        "initial": {
+          "regs": {
+            "t0": 0
+          }
+        },
+        "expected": {
+          "regs": {
+            "t1": 0,
+            "t2": 0
+          }
+        }
+      }
+    ]
+  },
+  "generated": {
+    "seed": 11151,
+    "fixedCount": 8,
+    "randomCount": 6,
+    "checkRegs": [
+      "t1",
+      "t2"
+    ],
+    "inputs": {
+      "regs": {
+        "t0": {
+          "min": -10000,
+          "max": 10000
+        }
+      }
+    }
+  }
+}
